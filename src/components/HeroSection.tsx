@@ -31,10 +31,10 @@ const HeroSection = () => (
         </motion.span>
         <motion.h1
           variants={fadeUp(0.1)}
-          className="text-3xl sm:text-4xl md:text-6xl lg:text-7xl font-display font-bold text-primary-foreground leading-[1.1] max-w-4xl mx-auto tracking-tight break-words overflow-hidden text-ellipsis"
+          className="font-display font-bold text-primary-foreground max-w-5xl mx-auto tracking-tight"
         >
-          Declutter your home, go greener. <br className="hidden md:block" />
-          <span className="text-secondary">Book Free E-Waste Collection Now.</span>
+          <span className="block text-2xl sm:text-3xl md:text-5xl lg:text-6xl leading-[1.1] whitespace-nowrap">Declutter your home, go greener.</span>
+          <span className="block text-xl sm:text-2xl md:text-4xl lg:text-5xl leading-[1.2] text-secondary mt-2 whitespace-nowrap">Book Free E-Waste Collection Now.</span>
         </motion.h1>
         <motion.p
           variants={fadeUp(0.2)}
