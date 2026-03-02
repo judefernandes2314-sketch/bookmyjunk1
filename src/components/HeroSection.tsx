@@ -31,7 +31,7 @@ const HeroSection = () => (
         </motion.span>
         <motion.h1
           variants={fadeUp(0.1)}
-          className="text-3xl sm:text-4xl md:text-6xl lg:text-7xl font-display font-bold text-primary-foreground leading-[1.1] max-w-4xl mx-auto tracking-tight"
+          className="text-3xl sm:text-4xl md:text-6xl lg:text-7xl font-display font-bold text-primary-foreground leading-[1.1] max-w-4xl mx-auto tracking-tight break-words overflow-hidden text-ellipsis"
         >
           Declutter your home, go greener. <br className="hidden md:block" />
           <span className="text-secondary">Book Free E-Waste Collection Now.</span>
