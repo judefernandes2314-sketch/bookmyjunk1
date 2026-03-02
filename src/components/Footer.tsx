@@ -52,7 +52,7 @@ const Footer = () => (
         <motion.div variants={itemVariants}>
           <h4 className="font-display font-semibold mb-4">Contact</h4>
           <ul className="space-y-3 text-sm text-background/60">
-            <li className="flex items-center gap-2"><Phone className="h-4 w-4" /> +91 XXXXX XXXXX</li>
+            <li className="flex items-center gap-2"><Phone className="h-4 w-4" /> +91 8976769851</li>
             <li className="flex items-center gap-2"><Mail className="h-4 w-4" /> info@bookmyjunk.com</li>
             <li className="flex items-start gap-2"><MapPin className="h-4 w-4 mt-0.5" /> Mumbai, Maharashtra, India</li>
           </ul>
