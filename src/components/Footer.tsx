@@ -43,9 +43,9 @@ const Footer = () => (
         <motion.div variants={itemVariants}>
           <h4 className="font-display font-semibold mb-4">Quick Links</h4>
           <ul className="space-y-2 text-sm text-background/60 story-link">
-            <li><a href="#about" className="hover:text-background transition">About Us</a></li>
-            <li><a href="#book" className="hover:text-background transition">Book Pickup</a></li>
-            <li><a href="#faq" className="hover:text-background transition">FAQs</a></li>
+            <li>About Us</li>
+            <li>Book Pickup</li>
+            <li>FAQs</a></li>
             <li><a href="/blog" className="hover:text-background transition">Blog</a></li>
           </ul>
         </motion.div>
