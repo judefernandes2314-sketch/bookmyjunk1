@@ -73,7 +73,7 @@ const Navbar = () => {
                 onClick={(e) => {
                   e.preventDefault();
                   setOpen(false);
-                  const userAgent = navigator.userAgent || navigator.vendor || window.opera;
+                  const userAgent = navigator.userAgent || (navigator as any).vendor || (window as any).opera;
                   const ios = /iPad|iPhone|iPod/.test(userAgent) || 
                     (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
                   const android = /android/i.test(userAgent);
@@ -84,13 +84,12 @@ const Navbar = () => {
                   } else if (android) {
                     window.open(androidStore, "_blank", "noopener,noreferrer");
                   } else {
-                    // default to Google Play
                     window.open(androidStore, "_blank", "noopener,noreferrer");
                   }
                 }}
                 className="block mt-2 bg-primary text-primary-foreground text-center px-5 py-2.5 rounded-lg text-sm font-semibold"
               >
-                <download>Download App</download> 
+                📲 Download App
               </a>
             </div>
           </motion.div>
