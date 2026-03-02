@@ -9,6 +9,7 @@ import VideosSection from "@/components/VideosSection";
 import FAQSection from "@/components/FAQSection";
 import Footer from "@/components/Footer";
 import StickyBottomCTA from "@/components/StickyBottomCTA";
+import WhatsAppFloat from "@/components/WhatsAppFloat";
 
 const Index = () => {
   return (
@@ -27,6 +28,7 @@ const Index = () => {
       </main>
       <Footer />
       <StickyBottomCTA />
+      <WhatsAppFloat />
     </>
   );
 };

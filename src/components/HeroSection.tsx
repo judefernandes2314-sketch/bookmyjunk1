@@ -45,7 +45,7 @@ const HeroSection = () => (
 
         <motion.div variants={fadeUp(0.3)} className="mt-10 flex flex-col sm:flex-row gap-4 justify-center">
           <motion.a
-            href="#book"
+            href="https://wa.me/918976769851?text=Hi%2C%20I%20want%20to%20book%20a%20free%20e-waste%20pickup"
             target="_blank"
             rel="noopener noreferrer"
             whileHover={{ scale: 1.04, y: -2 }}
