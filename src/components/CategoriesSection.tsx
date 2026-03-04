@@ -75,7 +75,7 @@ const CategoriesSection = () => {
           className="text-center mt-10 text-muted-foreground text-sm"
         >
           {// Don't see your item? <a href="#book" className="text-primary font-medium story-link">Contact us</a> — we accept almost everything electronic.}
-            Don't see your item? Contact us on connectwithus@bookmyjunk.com — we accept almost everything electronic.
+             Don't see your item? Contact us on connectwithus@bookmyjunk.com — we accept almost everything electronic.
         </motion.p>
       </div>
     </section>
