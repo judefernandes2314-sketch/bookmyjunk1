@@ -25,6 +25,11 @@ const BookingForm = () => {
       toast.error("Please enter a valid 10-digit phone number");
       return;
     }
+    const subject = encodeURIComponent("New E-Waste Pickup Request");
+    const body = encodeURIComponent(
+      `Name: ${form.name}\nPhone: ${form.phone}\nLocation: ${form.location}\nItems: ${form.items.join(", ")}\nQuantity: ${form.quantity}\nNotes: ${form.notes || "N/A"}`
+    );
+    window.open(`mailto:connectwithus@bookmyjunk.com?subject=${subject}&body=${body}`, "_self");
     toast.success("Pickup request submitted! We'll contact you within 24 hours.");
     setForm({ name: "", phone: "", location: "", items: [], quantity: "", notes: "" });
   };
