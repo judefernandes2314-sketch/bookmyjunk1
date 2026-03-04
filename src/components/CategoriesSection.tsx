@@ -74,7 +74,7 @@ const CategoriesSection = () => {
           transition={{ duration: 0.6, delay: 0.5, ease }}
           className="text-center mt-10 text-muted-foreground text-sm"
         >
-          {//Don't see your item? <a href="#book" className="text-primary font-medium story-link">Contact us</a> — we accept almost everything electronic.}
+          {// Don't see your item? <a href="#book" className="text-primary font-medium story-link">Contact us</a> — we accept almost everything electronic.}
         </motion.p>
       </div>
     </section>
