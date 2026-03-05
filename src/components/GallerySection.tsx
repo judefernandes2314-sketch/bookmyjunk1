@@ -16,37 +16,17 @@ import BMJ_4 from "@/assets/Book-my-junk-ewaste-collection-van.webp";
  * ✏️ EASY TO UPDATE: Just add/remove objects below to change gallery images.
  * Use imported assets or external URLs.
  */
+/**
+ * ✏️ HOW TO UPDATE GALLERY IMAGES:
+ * 1. Drop your new image into src/assets/gallery/
+ * 2. Import it below
+ * 3. Add an entry to the galleryImages array
+ */
 const galleryImages = [
-  {
-    src: "https://images.unsplash.com/photo-1624823183493-ed5832f48f18?w=800&q=80",
-    alt: "E-waste collection drive",
-    caption: "Community E-Waste Collection Drive",
-  },
-  {
-    src: "https://images.unsplash.com/photo-1624823183493-ed5832f48f18?w=800&q=80",
-    alt: "Recycling facility",
-    caption: "Our State-of-the-Art Recycling Facility",
-  },
-  {
-    src: "https://images.unsplash.com/photo-1624823183493-ed5832f48f18?w=800&q=80",
-    alt: "Electronic waste sorting",
-    caption: "Certified E-Waste Sorting Process",
-  },
-  {
-    src: "https://images.unsplash.com/photo-1624823183493-ed5832f48f18?w=800&q=80",
-    alt: "Old electronics recycling",
-    caption: "Giving Old Electronics a New Life",
-  },
-  {
-    src: "https://images.unsplash.com/photo-1518770660439-4636190af475?w=800&q=80",
-    alt: "Circuit board recycling",
-    caption: "Precision Circuit Board Recovery",
-  },
-  {
-    src: "https://images.unsplash.com/photo-1624823183493-ed5832f48f18?w=800&q=80",
-    alt: "Team at work",
-    caption: "Our Dedicated Pickup Team",
-  },
+  { src: BMJ_1, alt: "E-waste collection drive", caption: "Community E-Waste Collection Drive" },
+  { src: BMJ_2, alt: "Electronic waste van", caption: "Our Fleet Ready for Pickup" },
+  { src: BMJ_3, alt: "E-waste collection staff", caption: "Our Dedicated Pickup Team" },
+  { src: BMJ_4, alt: "E-waste collection van", caption: "Certified E-Waste Collection" },
 ];
 
 const GallerySection = () => (
