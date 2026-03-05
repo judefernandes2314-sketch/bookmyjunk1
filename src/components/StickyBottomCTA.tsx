@@ -30,7 +30,7 @@ const StickyBottomCTA = () => {
             </p>
             <div className="flex items-center gap-3 flex-shrink-0">
               <a
-                href= "https://wa.me/919876543210" target="_blank" rel="noopener noreferrer"
+                href= "https://wa.me/8976769851" target="_blank" rel="noopener noreferrer"
                 className="border border-background/30 text-background px-4 py-2 rounded-lg text-sm font-semibold hover:bg-background/10 transition hidden sm:inline-flex items-center gap-2"
               >
                 <ArrowUp className="h-4 w-4" /> Book Pickup
