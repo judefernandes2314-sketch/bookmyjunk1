@@ -26,13 +26,13 @@ const Footer = () => (
           <div className="mb-4">
             <img src={logoFooter} alt="BookMyJunk" className="h-16 w-auto" />
           </div>
-          <p className="text-background/60 text-sm leading-relaxed">
+          <p className="text-black/60 text-sm leading-relaxed">
             India's trusted e-waste disposal service. Certified, eco-friendly, and free doorstep pickup. Making responsible e-waste recycling accessible to everyone.
           </p>
         </motion.div>
         <motion.div variants={itemVariants}>
           <h4 className="font-display font-semibold mb-4">Services</h4>
-          <ul className="space-y-2 text-sm text-background/60">
+          <ul className="space-y-2 text-sm text-black/60">
             <li>Doorstep E-Waste Collection</li>
             <li>Electronic Waste Pickup Service</li>
             <li>Corporate IT Asset Disposition</li>
@@ -43,7 +43,7 @@ const Footer = () => (
         </motion.div>
         <motion.div variants={itemVariants}>
           <h4 className="font-display font-semibold mb-4">Quick Links</h4>
-          <ul className="space-y-2 text-sm text-background/60">
+          <ul className="space-y-2 text-sm text-black/60">
             <li><a href="/#about" className="hover:text-background transition">About Us</a></li>
             <li><a href="/#book" className="hover:text-background transition">Book Pickup</a></li>
             <li><a href="/#faq" className="hover:text-background transition">FAQs</a></li>
@@ -53,7 +53,7 @@ const Footer = () => (
         </motion.div>
         <motion.div variants={itemVariants}>
           <h4 className="font-display font-semibold mb-4">Contact</h4>
-          <ul className="space-y-3 text-sm text-background/60">
+          <ul className="space-y-3 text-sm text-black/60">
             <li className="flex items-center gap-2"><Phone className="h-4 w-4" /> +91 8976769851</li>
             <li className="flex items-center gap-2"><Mail className="h-4 w-4" /> connectwithus@bookmyjunk.com</li>
             <li className="flex items-start gap-2"><MapPin className="h-4 w-4 mt-0.5" /> Andheri (E),Mumbai, Maharashtra, India</li>
@@ -67,8 +67,8 @@ const Footer = () => (
         transition={{ delay: 0.5 }}
         className="mt-12 pt-8 border-t border-background/10 flex flex-col md:flex-row justify-between items-center gap-4"
       >
-        <p className="text-sm text-background/40">© {new Date().getFullYear()} BookMyJunk.com — Certified E-Waste Recycling Company in India</p>
-        <p className="text-xs text-background/30">E-waste disposal services in India | Electronic scrap recycling service</p>
+        <p className="text-sm text-green/40">© {new Date().getFullYear()} BookMyJunk.com — Certified E-Waste Recycling Company in India</p>
+        <p className="text-xs text-green/30">E-waste disposal services in India | Electronic scrap recycling service</p>
       </motion.div>
     </div>
   </footer>
