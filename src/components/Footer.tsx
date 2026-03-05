@@ -67,8 +67,8 @@ const Footer = () => (
         transition={{ delay: 0.5 }}
         className="mt-12 pt-8 border-t border-background/10 flex flex-col md:flex-row justify-between items-center gap-4"
       >
-        <p className="text-sm text-green/40">© {new Date().getFullYear()} BookMyJunk.com — Certified E-Waste Recycling Company in India</p>
-        <p className="text-xs text-green/30">E-waste disposal services in India | Electronic scrap recycling service</p>
+        <p className="text-sm text-green-400">© {new Date().getFullYear()} BookMyJunk.com — Certified E-Waste Recycling Company in India</p>
+        <p className="text-xs text-green-400">E-waste disposal services in India | Electronic scrap recycling service</p>
       </motion.div>
     </div>
   </footer>
