@@ -40,7 +40,7 @@ const Navbar = () => {
               </a>
             )
           )}
-          <a href="https://wa.me/8976769851" target="_blank" rel="noopener noreferrer" className="border border-primary/60 text-primary px-4 py-2 rounded-lg text-sm font-semibold hover:bg-primary/5 transition-colors duration-200">
+          <a href="https://wa.me/+918976769851" target="_blank" rel="noopener noreferrer" className="border border-primary/60 text-primary px-4 py-2 rounded-lg text-sm font-semibold hover:bg-primary/5 transition-colors duration-200">
             Book Pickup
           </a>
           {/*<a href="https://play.google.com/store" target="_blank" rel="noopener noreferrer" className="bg-primary text-primary-foreground px-4 py-2 rounded-lg text-sm font-semibold hover:bg-primary/90 transition-colors duration-200 flex items-center gap-1.5 shadow-sm shadow-primary/20">
@@ -72,7 +72,7 @@ const Navbar = () => {
                   </a>
                 )
               )}
-              <a href= "https://wa.me/8976769851" target="_blank" rel="noopener noreferrer" onClick={() => setOpen(false)} className="block mt-2 border border-primary/60 text-primary text-center px-5 py-2.5 rounded-lg text-sm font-semibold">
+              <a href= "https://wa.me/+918976769851" target="_blank" rel="noopener noreferrer" onClick={() => setOpen(false)} className="block mt-2 border border-primary/60 text-primary text-center px-5 py-2.5 rounded-lg text-sm font-semibold">
                 Book Pickup
               </a>
               <a
