@@ -55,7 +55,12 @@ const Footer = () => (
           <h4 className="font-display font-semibold mb-4">Contact</h4>
           <ul className="space-y-3 text-sm text-black/60">
             <li className="flex items-center gap-2"><Phone className="h-4 w-4" /> +91 8976769851</li>
-            <li className="flex items-center gap-2"><Mail className="h-4 w-4" /> connectwithus@bookmyjunk.com</li>
+            <li className="flex items-center gap-2"><Mail className="h-4 w-4" /> 
+              <a
+                href="mailto:connectwithus@bookmyjunk.com"
+                className="hover:underline"
+              >
+                connectwithus@bookmyjunk.com </a></li>
             <li className="flex items-start gap-2"><MapPin className="h-4 w-4 mt-0.5" /> Andheri (E),Mumbai, Maharashtra, India</li>
           </ul>
         </motion.div>
