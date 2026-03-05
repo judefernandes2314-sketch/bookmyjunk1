@@ -13,7 +13,7 @@ const itemVariants = {
 };
 
 const Footer = () => (
-  <footer className="bg-white text-background py-16 overflow-hidden">
+  <footer className="bg-white text-black py-16 overflow-hidden">
     <div className="container mx-auto px-4">
       <motion.div
         variants={containerVariants}
