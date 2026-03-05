@@ -72,7 +72,7 @@ const Navbar = () => {
                   </a>
                 )
               )}
-              <a href={getHref("#book")} onClick={() => setOpen(false)} className="block mt-2 border border-primary/60 text-primary text-center px-5 py-2.5 rounded-lg text-sm font-semibold">
+              <a href= "https://wa.me/8976769851" target="_blank" rel="noopener noreferrer" onClick={() => setOpen(false)} className="block mt-2 border border-primary/60 text-primary text-center px-5 py-2.5 rounded-lg text-sm font-semibold">
                 Book Pickup
               </a>
               <a
