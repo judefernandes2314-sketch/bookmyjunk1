@@ -55,17 +55,17 @@ const GallerySection = () => (
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true }}
         transition={{ duration: 0.7, delay: 0.15 }}
-        className="max-w-5xl mx-auto"
+        className="max-w-7xl mx-auto"
       >
         <Carousel
           opts={{ align: "start", loop: true }}
           className="w-full"
         >
-          <CarouselContent className="-ml-4">
+          <CarouselContent className="-ml-3">
             {galleryImages.map((img, i) => (
               <CarouselItem
                 key={i}
-                className="pl-4 basis-full sm:basis-1/2 lg:basis-1/3"
+                className="pl-3 basis-full sm:basis-1/2 md:basis-1/3 lg:basis-1/5"
               >
                 <motion.div
                   whileHover={{ y: -6, scale: 1.02 }}
