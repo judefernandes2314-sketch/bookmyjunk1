@@ -24,7 +24,7 @@ const Navbar = () => {
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-white border-b border-border/50">
-      <div className="container mx-auto flex items-center justify-between h-28 px-4">
+      <div className="container mx-auto flex items-center justify-between h-29 px-4">
         <a href="/" className="flex items-center gap-2.5">
           <img src={logoTBG} alt="BookMyJunk" className="h-25 w-auto" />
         </a>
