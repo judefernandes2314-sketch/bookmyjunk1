@@ -85,23 +85,38 @@ const AppDownloadSection = () => (
           {/* Phone mockup */}
           <div className="relative">
             <div className="w-64 h-[520px] bg-foreground rounded-[40px] p-3 shadow-2xl">
-              <div className="w-full h-full bg-background rounded-[32px] overflow-hidden flex flex-col items-center justify-center text-center p-6">
-                <div className="w-16 h-16 bg-primary rounded-2xl flex items-center justify-center mb-4">
-                  <Smartphone className="h-8 w-8 text-primary-foreground" />
-                </div>
-                <h3 className="font-display font-bold text-foreground text-lg">BookMyJunk</h3>
-                <p className="text-muted-foreground text-sm mt-2">India's #1 E-Waste Recycling App</p>
-                <div className="mt-6 space-y-3 w-full">
-                  <div className="bg-accent rounded-xl p-3 text-left">
-                    <p className="text-xs font-medium text-accent-foreground">📍 Select Location</p>
-                    <p className="text-xs text-muted-foreground">Mumbai, Maharashtra</p>
+              <div className="w-full h-full bg-background rounded-[32px] overflow-hidden">
+                <img
+                  src={appScreenshot}
+                  alt="BookMyJunk App Screenshot"
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    // Fallback to the original mockup UI
+                    const target = e.currentTarget;
+                    target.style.display = 'none';
+                    const fallback = target.nextElementSibling as HTMLElement;
+                    if (fallback) fallback.style.display = 'flex';
+                  }}
+                />
+                {/* Fallback mockup (hidden by default) */}
+                <div className="w-full h-full flex-col items-center justify-center text-center p-6" style={{ display: 'none' }}>
+                  <div className="w-16 h-16 bg-primary rounded-2xl flex items-center justify-center mb-4">
+                    <Smartphone className="h-8 w-8 text-primary-foreground" />
                   </div>
-                  <div className="bg-accent rounded-xl p-3 text-left">
-                    <p className="text-xs font-medium text-accent-foreground">📦 Items</p>
-                    <p className="text-xs text-muted-foreground">2 Laptops, 3 Phones</p>
-                  </div>
-                  <div className="bg-primary text-primary-foreground rounded-xl p-3 text-center">
-                    <p className="text-sm font-semibold">Book Free Pickup →</p>
+                  <h3 className="font-display font-bold text-foreground text-lg">BookMyJunk</h3>
+                  <p className="text-muted-foreground text-sm mt-2">India's #1 E-Waste Recycling App</p>
+                  <div className="mt-6 space-y-3 w-full">
+                    <div className="bg-accent rounded-xl p-3 text-left">
+                      <p className="text-xs font-medium text-accent-foreground">📍 Select Location</p>
+                      <p className="text-xs text-muted-foreground">Mumbai, Maharashtra</p>
+                    </div>
+                    <div className="bg-accent rounded-xl p-3 text-left">
+                      <p className="text-xs font-medium text-accent-foreground">📦 Items</p>
+                      <p className="text-xs text-muted-foreground">2 Laptops, 3 Phones</p>
+                    </div>
+                    <div className="bg-primary text-primary-foreground rounded-xl p-3 text-center">
+                      <p className="text-sm font-semibold">Book Free Pickup →</p>
+                    </div>
                   </div>
                 </div>
               </div>
