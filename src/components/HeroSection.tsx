@@ -16,7 +16,7 @@ const HeroSection = () => (
     <img
       src={heroBg}
       alt="E-waste recycling facility for responsible e-waste recycling in India"
-      className="absolute inset-0 w-full h-auto object-cover"
+      className="absolute inset-0 w-full h-full object-cover"
       loading="eager"
       fetchPriority="high"
     />
