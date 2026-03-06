@@ -94,14 +94,14 @@ const GallerySection = () => {
 
       {/* Lightbox Dialog */}
       <Dialog open={!!selectedImage} onOpenChange={() => setSelectedImage(null)}>
-        <DialogContent className="max-w-4xl p-2 bg-background/95 backdrop-blur-sm border-border">
+        <DialogContent className="max-w-[90vw] md:max-w-4xl w-auto p-2 bg-background/95 backdrop-blur-sm border-border">
           <DialogTitle className="sr-only">{selectedImage?.caption}</DialogTitle>
           {selectedImage && (
-            <div className="relative">
+            <div className="relative flex flex-col items-center">
               <img
                 src={selectedImage.src}
                 alt={selectedImage.alt}
-                className="w-full h-auto max-h-[80vh] object-contain rounded-lg"
+                className="max-w-full max-h-[80vh] w-auto h-auto object-contain rounded-lg"
               />
               <div className="text-center mt-3 pb-2">
                 <span className="text-foreground font-display font-semibold text-base">
