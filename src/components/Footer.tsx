@@ -24,7 +24,7 @@ const Footer = () => (
       >
         <motion.div variants={itemVariants}>
           <div className="mb-4">
-            <img src={logoFooter} alt="BookMyJunk" className="h-24 w-auto" />
+            <img src={logoFooter} alt="BookMyJunk" className="h-20 w-auto" />
           </div>
           <p className="text-black/60 text-sm leading-relaxed">
             India's trusted e-waste disposal service. Certified, eco-friendly, and free doorstep pickup. Making responsible e-waste recycling accessible to everyone.
