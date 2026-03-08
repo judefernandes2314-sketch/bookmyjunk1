@@ -80,7 +80,7 @@ const BlogPost = () => {
       </div>
 
       <main className="pb-24 bg-background min-h-screen">
-        <article className="container mx-auto px-4 max-w-3xl -mt-24 relative z-10">
+        <article className="container mx-auto px-4 max-w-3xl mt-8 relative z-10">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
