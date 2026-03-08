@@ -60,6 +60,17 @@ CREATE TABLE IF NOT EXISTS role_permissions (
   FOREIGN KEY (permission_id) REFERENCES permissions(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- Admin approval requests table
+CREATE TABLE IF NOT EXISTS admin_approvals (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  user_id INT NOT NULL,
+  token VARCHAR(255) NOT NULL UNIQUE,
+  status ENUM('pending', 'approved', 'rejected') DEFAULT 'pending',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES admin_users(id) ON DELETE CASCADE,
+  INDEX idx_token (token)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- Foreign key for admin_users.role_id
 ALTER TABLE admin_users ADD FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE SET NULL;
 
@@ -70,7 +81,8 @@ ALTER TABLE admin_users ADD FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE
 -- Default roles
 INSERT INTO roles (name, description) VALUES
   ('admin', 'Full control over all features'),
-  ('author', 'Can create, edit, and publish own posts');
+  ('author', 'Can create, edit, and publish own posts'),
+  ('pending_admin', 'Awaiting admin approval');
 
 -- Default permissions
 INSERT INTO permissions (name, description) VALUES

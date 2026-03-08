@@ -1,7 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowLeft, Save, Eye } from "lucide-react";
+import { ArrowLeft, Save, Eye, Upload, Loader2 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import { getPostBySlug, type BlogPost } from "@/lib/blog-api";
 
@@ -10,6 +10,8 @@ const AdminPostEditor = () => {
   const navigate = useNavigate();
   const isEdit = !!slug;
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [form, setForm] = useState({
     title: "",
     slug: "",
@@ -51,6 +53,32 @@ const AdminPostEditor = () => {
       title,
       slug: isEdit ? prev.slug : generateSlug(title),
     }));
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const API_BASE = import.meta.env.VITE_API_URL || "";
+    if (!API_BASE) {
+      // No backend — use object URL as preview
+      setForm((f) => ({ ...f, image: URL.createObjectURL(file) }));
+      return;
+    }
+    setUploading(true);
+    const fd = new FormData();
+    fd.append("image", file);
+    try {
+      const res = await fetch(`${API_BASE}/api/admin/upload`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${localStorage.getItem("admin_token")}` },
+        body: fd,
+      });
+      const data = await res.json();
+      if (data.url) setForm((f) => ({ ...f, image: data.url }));
+    } catch (err) {
+      console.error("Upload failed", err);
+    }
+    setUploading(false);
   };
 
   const handleSave = async () => {
@@ -126,14 +154,32 @@ const AdminPostEditor = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-foreground mb-1.5">Featured Image URL</label>
-                <input
-                  type="text"
-                  value={form.image}
-                  onChange={(e) => setForm((f) => ({ ...f, image: e.target.value }))}
-                  className="w-full px-4 py-2.5 rounded-lg border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                  placeholder="/images/blog/post.jpg"
-                />
+                <label className="block text-sm font-medium text-foreground mb-1.5">Featured Image</label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={form.image}
+                    onChange={(e) => setForm((f) => ({ ...f, image: e.target.value }))}
+                    className="flex-1 px-4 py-2.5 rounded-lg border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                    placeholder="/uploads/image.jpg or URL"
+                  />
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleImageUpload}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={uploading}
+                    className="inline-flex items-center gap-1.5 border border-border px-3 py-2.5 rounded-lg text-sm font-medium hover:bg-muted transition-colors disabled:opacity-50"
+                  >
+                    {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+                    {uploading ? "Uploading…" : "Upload"}
+                  </button>
+                </div>
                 {form.image && (
                   <img src={form.image} alt="Preview" className="mt-2 h-32 rounded-lg object-cover" />
                 )}
