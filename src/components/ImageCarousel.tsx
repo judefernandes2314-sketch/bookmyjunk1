@@ -34,11 +34,13 @@ const ImageCarousel = () => {
 
   const goNext = useCallback(() => {
     if (totalPages === 0) return;
+    setDirection(1);
     setPage((p) => (p + 1) % totalPages);
   }, [totalPages]);
 
   const goPrev = useCallback(() => {
     if (totalPages === 0) return;
+    setDirection(-1);
     setPage((p) => (p - 1 + totalPages) % totalPages);
   }, [totalPages]);
 
