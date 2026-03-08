@@ -90,7 +90,7 @@ const ImageCarousel = () => {
         {/* Carousel */}
         <div
           ref={containerRef}
-          className="relative max-w-5xl mx-auto overflow-hidden rounded-2xl border border-border bg-card shadow-lg"
+          className="relative max-w-3xl mx-auto overflow-hidden rounded-2xl border border-border bg-card shadow-lg"
           onMouseEnter={() => setIsPaused(true)}
           onMouseLeave={() => setIsPaused(false)}
           onTouchStart={handleTouchStart}
