@@ -20,6 +20,7 @@ const AdminPostEditor = () => {
     content: "",
     author: localStorage.getItem("admin_email") || "Admin",
     status: "draft",
+    featured_homepage: false,
     seo_title: "",
     seo_description: "",
     seo_keywords: "",
@@ -41,6 +42,7 @@ const AdminPostEditor = () => {
             content: post.content,
             author: post.author,
             status: post.status || "draft",
+            featured_homepage: !!post.featured_homepage,
             seo_title: post.seo_title || "",
             seo_description: post.seo_description || "",
             seo_keywords: post.seo_keywords || "",
@@ -234,6 +236,18 @@ const AdminPostEditor = () => {
                     <option value="published">Published</option>
                   </select>
                 </div>
+              </div>
+
+              {/* Featured on Homepage */}
+              <div className="flex items-center gap-3 py-2">
+                <button
+                  type="button"
+                  onClick={() => setForm((f) => ({ ...f, featured_homepage: !f.featured_homepage }))}
+                  className={`relative w-10 h-5 rounded-full transition-colors ${form.featured_homepage ? "bg-primary" : "bg-muted-foreground/30"}`}
+                >
+                  <span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white transition-transform ${form.featured_homepage ? "translate-x-5" : ""}`} />
+                </button>
+                <label className="text-sm font-medium text-foreground">Feature on Homepage</label>
               </div>
 
               {/* SEO Section */}

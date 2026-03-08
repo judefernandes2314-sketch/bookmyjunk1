@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Plus, Edit, Trash2, Eye, EyeOff, LogOut, FileText, Users, Shield } from "lucide-react";
+import { Plus, Edit, Trash2, Eye, EyeOff, LogOut, FileText, Users, Shield, Star } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import { getAllPosts, type BlogPost } from "@/lib/blog-api";
 
@@ -40,6 +40,22 @@ const AdminDashboard = () => {
       });
     }
     setPosts((prev) => prev.filter((p) => p.slug !== slug));
+  };
+
+  const toggleFeatured = async (post: BlogPost) => {
+    const API_BASE = import.meta.env.VITE_API_URL || "";
+    const newVal = !post.featured_homepage;
+    if (API_BASE) {
+      await fetch(`${API_BASE}/api/admin/posts/${post.slug}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("admin_token")}`,
+        },
+        body: JSON.stringify({ ...post, featured_homepage: newVal }),
+      });
+    }
+    setPosts((prev) => prev.map((p) => p.slug === post.slug ? { ...p, featured_homepage: newVal } : p));
   };
 
   const tabs = [
@@ -118,6 +134,13 @@ const AdminDashboard = () => {
                         </p>
                       </div>
                       <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => toggleFeatured(post)}
+                          title={post.featured_homepage ? "Remove from homepage" : "Feature on homepage"}
+                          className={`p-1.5 rounded-lg transition-colors ${post.featured_homepage ? "text-amber-500 bg-amber-500/10" : "text-muted-foreground/40 hover:text-amber-500 hover:bg-muted"}`}
+                        >
+                          <Star className={`h-4 w-4 ${post.featured_homepage ? "fill-current" : ""}`} />
+                        </button>
                         <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
                           post.status === "published" ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"
                         }`}>
