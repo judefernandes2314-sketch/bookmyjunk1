@@ -26,8 +26,9 @@ const BookingForm = () => {
       return;
     }
     const subject = encodeURIComponent("New E-Waste Pickup Request");
+    const itemsText = form.items.join(", ") + (form.items.includes("Other Electronics") && form.otherText ? ` (${form.otherText})` : "");
     const body = encodeURIComponent(
-      `Name: ${form.name}\nPhone: ${form.phone}\nLocation: ${form.location}\nItems: ${form.items.join(", ")}\nQuantity: ${form.quantity}\nNotes: ${form.notes || "N/A"}`
+      `Name: ${form.name}\nPhone: ${form.phone}\nLocation: ${form.location}\nItems: ${itemsText}\nQuantity: ${form.quantity}\nNotes: ${form.notes || "N/A"}`
     );
     const handleSubmit = async (e: React.FormEvent) => {
   e.preventDefault();
