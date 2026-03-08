@@ -9,7 +9,7 @@ const links = [
   { label: "Services", href: "#categories" },
   { label: "Videos", href: "#videos" },
   { label: "FAQ", href: "#faq" },
-  { label: "Blog", href: "/blog" },
+  { label: "Blog", href: "#blog" },
 ];
 
 const Navbar = () => {
