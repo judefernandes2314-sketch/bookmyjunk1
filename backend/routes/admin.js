@@ -45,9 +45,16 @@ async function generateUniqueSlug(title) {
   return `${slug}-${i}`;
 }
 
+// Helper: invalidate sitemap cache
+function invalidateSitemap(req) {
+  if (req.app.locals.sitemapCache) {
+    req.app.locals.sitemapCache.del("sitemap");
+    console.log("[Sitemap] Cache invalidated");
+  }
+}
+
 // ==================== AUTH ====================
 
-// POST /api/admin/login
 router.post("/login", async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -72,12 +79,9 @@ router.post("/login", async (req, res) => {
   }
 });
 
-// POST /api/admin/register — register + request approval if admin
 router.post("/register", async (req, res) => {
   try {
     const { email, password, name, requestAdmin } = req.body;
-
-    // Check existing
     const [existing] = await db.query("SELECT id FROM admin_users WHERE email = ?", [email]);
     if (existing.length > 0) return res.status(409).json({ message: "Email already registered" });
 
@@ -123,7 +127,6 @@ router.post("/register", async (req, res) => {
   }
 });
 
-// GET /api/admin/approve-admin?token=TOKEN
 router.get("/approve-admin", async (req, res) => {
   try {
     const { token } = req.query;
@@ -149,7 +152,6 @@ router.get("/approve-admin", async (req, res) => {
 
 // ==================== POSTS ====================
 
-// GET /api/admin/posts
 router.get("/posts", auth, async (req, res) => {
   try {
     const [rows] = await db.query("SELECT * FROM blog_posts ORDER BY created_at DESC");
@@ -159,46 +161,45 @@ router.get("/posts", auth, async (req, res) => {
   }
 });
 
-// POST /api/admin/posts
 router.post("/posts", auth, checkPermission("create_post"), async (req, res) => {
   try {
-    const { title, slug: manualSlug, image, excerpt, content, author, status } = req.body;
+    const { title, slug: manualSlug, image, excerpt, content, author, status, seo_title, seo_description, seo_keywords } = req.body;
     const slug = manualSlug || (await generateUniqueSlug(title));
     const [result] = await db.query(
-      "INSERT INTO blog_posts (title, slug, image, excerpt, content, author, status, publish_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-      [title, slug, image, excerpt, content, author, status, status === "published" ? new Date() : null]
+      "INSERT INTO blog_posts (title, slug, image, excerpt, content, author, status, publish_date, seo_title, seo_description, seo_keywords) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+      [title, slug, image, excerpt, content, author, status, status === "published" ? new Date() : null, seo_title || null, seo_description || null, seo_keywords || null]
     );
+    invalidateSitemap(req);
     res.status(201).json({ id: result.insertId, slug, message: "Post created" });
   } catch (err) {
     res.status(500).json({ message: "Server error", error: err.message });
   }
 });
 
-// PUT /api/admin/posts/:slug
 router.put("/posts/:slug", auth, checkPermission("edit_post"), async (req, res) => {
   try {
-    const { title, image, excerpt, content, author, status } = req.body;
+    const { title, image, excerpt, content, author, status, seo_title, seo_description, seo_keywords } = req.body;
     await db.query(
-      "UPDATE blog_posts SET title=?, image=?, excerpt=?, content=?, author=?, status=?, publish_date=IF(?='published' AND publish_date IS NULL, NOW(), publish_date) WHERE slug=?",
-      [title, image, excerpt, content, author, status, status, req.params.slug]
+      "UPDATE blog_posts SET title=?, image=?, excerpt=?, content=?, author=?, status=?, publish_date=IF(?='published' AND publish_date IS NULL, NOW(), publish_date), seo_title=?, seo_description=?, seo_keywords=? WHERE slug=?",
+      [title, image, excerpt, content, author, status, status, seo_title || null, seo_description || null, seo_keywords || null, req.params.slug]
     );
+    invalidateSitemap(req);
     res.json({ message: "Post updated" });
   } catch (err) {
     res.status(500).json({ message: "Server error" });
   }
 });
 
-// DELETE /api/admin/posts/:slug
 router.delete("/posts/:slug", auth, checkPermission("delete_post"), async (req, res) => {
   try {
     await db.query("DELETE FROM blog_posts WHERE slug = ?", [req.params.slug]);
+    invalidateSitemap(req);
     res.json({ message: "Post deleted" });
   } catch (err) {
     res.status(500).json({ message: "Server error" });
   }
 });
 
-// POST /api/admin/upload
 router.post("/upload", auth, upload.single("image"), (req, res) => {
   if (!req.file) return res.status(400).json({ message: "No file" });
   console.log("[Upload] Image uploaded:", req.file.filename);
@@ -207,7 +208,6 @@ router.post("/upload", auth, upload.single("image"), (req, res) => {
 
 // ==================== JSON IMPORT ====================
 
-// POST /api/admin/import-json
 router.post("/import-json", auth, checkPermission("import_json"), async (req, res) => {
   try {
     const posts = req.body;
@@ -216,9 +216,6 @@ router.post("/import-json", auth, checkPermission("import_json"), async (req, re
     let imported = 0;
     let skipped = 0;
     for (const p of posts) {
-      const slug = await generateUniqueSlug(p.title);
-
-      // Check exact title match to avoid re-importing same content
       const [dup] = await db.query("SELECT id FROM blog_posts WHERE title = ?", [p.title]);
       if (dup.length > 0) {
         console.log(`[Import] Duplicate blog skipped: "${p.title}"`);
@@ -226,12 +223,14 @@ router.post("/import-json", auth, checkPermission("import_json"), async (req, re
         continue;
       }
 
+      const slug = await generateUniqueSlug(p.title);
       await db.query(
         "INSERT INTO blog_posts (title, slug, image, excerpt, content, author, status, publish_date) VALUES (?, ?, ?, ?, ?, ?, 'published', NOW())",
         [p.title, slug, p.image, p.excerpt, p.content, p.author || "Admin"]
       );
       imported++;
     }
+    if (imported > 0) invalidateSitemap(req);
     res.json({ message: `${imported} posts imported, ${skipped} duplicates skipped` });
   } catch (err) {
     res.status(500).json({ message: "Import failed", error: err.message });

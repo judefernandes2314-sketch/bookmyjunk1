@@ -16,6 +16,9 @@ CREATE TABLE IF NOT EXISTS blog_posts (
   author VARCHAR(100) DEFAULT 'Admin',
   status ENUM('draft', 'published') DEFAULT 'draft',
   publish_date DATE DEFAULT NULL,
+  seo_title VARCHAR(255) DEFAULT NULL,
+  seo_description TEXT DEFAULT NULL,
+  seo_keywords TEXT DEFAULT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   INDEX idx_slug (slug),
@@ -104,7 +107,14 @@ SELECT r.id, p.id FROM roles r, permissions p
 WHERE r.name = 'author' AND p.name IN ('create_post', 'edit_post', 'delete_post', 'publish_post');
 
 -- Default admin users (password: admin123 — change after first login!)
--- Password hash for 'admin123' using bcrypt
 INSERT INTO admin_users (email, password_hash, name, role_id) VALUES
   ('epr@ecoreco.com', '$2b$10$placeholder_hash_change_me', 'EPR Admin', (SELECT id FROM roles WHERE name = 'admin')),
   ('info@ecoreco.com', '$2b$10$placeholder_hash_change_me', 'Info Admin', (SELECT id FROM roles WHERE name = 'admin'));
+
+-- ======================================
+-- Migration helper: add SEO columns to existing table
+-- Run this if upgrading from previous schema:
+-- ALTER TABLE blog_posts ADD COLUMN seo_title VARCHAR(255) DEFAULT NULL AFTER publish_date;
+-- ALTER TABLE blog_posts ADD COLUMN seo_description TEXT DEFAULT NULL AFTER seo_title;
+-- ALTER TABLE blog_posts ADD COLUMN seo_keywords TEXT DEFAULT NULL AFTER seo_description;
+-- ======================================
