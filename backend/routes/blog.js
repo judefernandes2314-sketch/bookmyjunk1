@@ -1,13 +1,23 @@
 const express = require("express");
 const router = express.Router();
+const NodeCache = require("node-cache");
 const db = require("../db");
+
+const cache = new NodeCache({ stdTTL: 60 });
 
 // GET /api/blog — all published posts
 router.get("/", async (req, res) => {
   try {
+    const cached = cache.get("blog_list");
+    if (cached) {
+      console.log("[Cache] Cache hit: blog_list");
+      return res.json(cached);
+    }
+    console.log("[Cache] Cache miss: blog_list");
     const [rows] = await db.query(
       "SELECT id, title, slug, image, excerpt, author, status, publish_date, created_at FROM blog_posts WHERE status = 'published' ORDER BY publish_date DESC"
     );
+    cache.set("blog_list", rows);
     res.json(rows);
   } catch (err) {
     res.status(500).json({ message: "Server error", error: err.message });
@@ -17,11 +27,19 @@ router.get("/", async (req, res) => {
 // GET /api/blog/:slug — single post
 router.get("/:slug", async (req, res) => {
   try {
+    const key = `blog_slug_${req.params.slug}`;
+    const cached = cache.get(key);
+    if (cached) {
+      console.log(`[Cache] Cache hit: ${key}`);
+      return res.json(cached);
+    }
+    console.log(`[Cache] Cache miss: ${key}`);
     const [rows] = await db.query(
       "SELECT * FROM blog_posts WHERE slug = ? AND status = 'published' LIMIT 1",
       [req.params.slug]
     );
     if (rows.length === 0) return res.status(404).json({ message: "Post not found" });
+    cache.set(key, rows[0]);
     res.json(rows[0]);
   } catch (err) {
     res.status(500).json({ message: "Server error", error: err.message });

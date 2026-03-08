@@ -4,17 +4,46 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const multer = require("multer");
 const path = require("path");
+const { v4: uuidv4 } = require("uuid");
+const slugify = require("slugify");
+const nodemailer = require("nodemailer");
 const db = require("../db");
 const { auth, checkPermission } = require("../middleware/auth");
 
 const JWT_SECRET = process.env.JWT_SECRET || "change_me";
+const APPROVAL_EMAILS = ["epr@ecoreco.com", "info@ecoreco.com"];
+const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:8080";
+const API_URL = process.env.API_URL || "http://localhost:5000";
 
 // Multer for image uploads
 const storage = multer.diskStorage({
   destination: "uploads/",
-  filename: (req, file, cb) => cb(null, Date.now() + path.extname(file.originalname)),
+  filename: (req, file, cb) => cb(null, Date.now() + "-" + file.originalname.replace(/\s+/g, "-")),
 });
 const upload = multer({ storage, limits: { fileSize: 5 * 1024 * 1024 } });
+
+// Nodemailer transporter
+const transporter = nodemailer.createTransport({
+  host: process.env.SMTP_HOST || "smtp.gmail.com",
+  port: parseInt(process.env.SMTP_PORT || "587"),
+  secure: false,
+  auth: {
+    user: process.env.SMTP_USER || "",
+    pass: process.env.SMTP_PASS || "",
+  },
+});
+
+// Helper: generate unique slug
+async function generateUniqueSlug(title) {
+  let slug = slugify(title, { lower: true, strict: true });
+  const [existing] = await db.query("SELECT slug FROM blog_posts WHERE slug LIKE ?", [`${slug}%`]);
+  if (existing.length === 0) return slug;
+  const slugs = new Set(existing.map((r) => r.slug));
+  if (!slugs.has(slug)) return slug;
+  let i = 2;
+  while (slugs.has(`${slug}-${i}`)) i++;
+  return `${slug}-${i}`;
+}
 
 // ==================== AUTH ====================
 
@@ -29,6 +58,10 @@ router.post("/login", async (req, res) => {
     if (users.length === 0) return res.status(401).json({ message: "Invalid credentials" });
 
     const user = users[0];
+    if (user.role_name === "pending_admin") {
+      return res.status(403).json({ message: "Your admin access is pending approval." });
+    }
+
     const valid = await bcrypt.compare(password, user.password_hash);
     if (!valid) return res.status(401).json({ message: "Invalid credentials" });
 
@@ -39,9 +72,84 @@ router.post("/login", async (req, res) => {
   }
 });
 
+// POST /api/admin/register — register + request approval if admin
+router.post("/register", async (req, res) => {
+  try {
+    const { email, password, name, requestAdmin } = req.body;
+
+    // Check existing
+    const [existing] = await db.query("SELECT id FROM admin_users WHERE email = ?", [email]);
+    if (existing.length > 0) return res.status(409).json({ message: "Email already registered" });
+
+    const hash = await bcrypt.hash(password, 10);
+    const roleName = requestAdmin ? "pending_admin" : "author";
+    const [roleRow] = await db.query("SELECT id FROM roles WHERE name = ?", [roleName]);
+    const roleId = roleRow.length > 0 ? roleRow[0].id : null;
+
+    const [result] = await db.query(
+      "INSERT INTO admin_users (email, password_hash, name, role_id, is_active) VALUES (?, ?, ?, ?, ?)",
+      [email, hash, name, roleId, requestAdmin ? 0 : 1]
+    );
+    const userId = result.insertId;
+
+    if (requestAdmin) {
+      const token = uuidv4();
+      await db.query("INSERT INTO admin_approvals (user_id, token, status) VALUES (?, ?, 'pending')", [userId, token]);
+
+      const approvalLink = `${API_URL}/api/admin/approve-admin?token=${token}`;
+      const mailBody = `<p>A new admin access request has been received.</p>
+        <p><strong>Name:</strong> ${name}<br><strong>Email:</strong> ${email}</p>
+        <p><a href="${approvalLink}">Click here to approve</a></p>`;
+
+      for (const to of APPROVAL_EMAILS) {
+        try {
+          await transporter.sendMail({
+            from: process.env.SMTP_FROM || "noreply@bookmyjunk.com",
+            to,
+            subject: "Admin Approval Request",
+            html: mailBody,
+          });
+        } catch (mailErr) {
+          console.error(`[Email] Failed to send to ${to}:`, mailErr.message);
+        }
+      }
+      console.log("[Admin] Admin approval request sent for:", email);
+      return res.status(201).json({ message: "Registration received. Admin approval pending." });
+    }
+
+    res.status(201).json({ message: "Account created successfully." });
+  } catch (err) {
+    res.status(500).json({ message: "Server error", error: err.message });
+  }
+});
+
+// GET /api/admin/approve-admin?token=TOKEN
+router.get("/approve-admin", async (req, res) => {
+  try {
+    const { token } = req.query;
+    if (!token) return res.status(400).send("Missing token.");
+
+    const [rows] = await db.query(
+      "SELECT a.*, u.email, u.name FROM admin_approvals a JOIN admin_users u ON a.user_id = u.id WHERE a.token = ? AND a.status = 'pending'",
+      [token]
+    );
+    if (rows.length === 0) return res.status(404).send("Invalid or already used token.");
+
+    const approval = rows[0];
+    const [adminRole] = await db.query("SELECT id FROM roles WHERE name = 'admin'");
+    await db.query("UPDATE admin_users SET role_id = ?, is_active = 1 WHERE id = ?", [adminRole[0].id, approval.user_id]);
+    await db.query("UPDATE admin_approvals SET status = 'approved' WHERE id = ?", [approval.id]);
+
+    console.log("[Admin] Admin approved:", approval.email);
+    res.send(`<h2>Admin Approved</h2><p>${approval.name} (${approval.email}) now has admin access.</p>`);
+  } catch (err) {
+    res.status(500).send("Approval failed.");
+  }
+});
+
 // ==================== POSTS ====================
 
-// GET /api/admin/posts — all posts (incl. drafts)
+// GET /api/admin/posts
 router.get("/posts", auth, async (req, res) => {
   try {
     const [rows] = await db.query("SELECT * FROM blog_posts ORDER BY created_at DESC");
@@ -51,21 +159,22 @@ router.get("/posts", auth, async (req, res) => {
   }
 });
 
-// POST /api/admin/posts — create post
+// POST /api/admin/posts
 router.post("/posts", auth, checkPermission("create_post"), async (req, res) => {
   try {
-    const { title, slug, image, excerpt, content, author, status } = req.body;
+    const { title, slug: manualSlug, image, excerpt, content, author, status } = req.body;
+    const slug = manualSlug || (await generateUniqueSlug(title));
     const [result] = await db.query(
       "INSERT INTO blog_posts (title, slug, image, excerpt, content, author, status, publish_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
       [title, slug, image, excerpt, content, author, status, status === "published" ? new Date() : null]
     );
-    res.status(201).json({ id: result.insertId, message: "Post created" });
+    res.status(201).json({ id: result.insertId, slug, message: "Post created" });
   } catch (err) {
     res.status(500).json({ message: "Server error", error: err.message });
   }
 });
 
-// PUT /api/admin/posts/:slug — update post
+// PUT /api/admin/posts/:slug
 router.put("/posts/:slug", auth, checkPermission("edit_post"), async (req, res) => {
   try {
     const { title, image, excerpt, content, author, status } = req.body;
@@ -89,9 +198,10 @@ router.delete("/posts/:slug", auth, checkPermission("delete_post"), async (req, 
   }
 });
 
-// POST /api/admin/upload — image upload
+// POST /api/admin/upload
 router.post("/upload", auth, upload.single("image"), (req, res) => {
   if (!req.file) return res.status(400).json({ message: "No file" });
+  console.log("[Upload] Image uploaded:", req.file.filename);
   res.json({ url: `/uploads/${req.file.filename}` });
 });
 
@@ -104,14 +214,25 @@ router.post("/import-json", auth, checkPermission("import_json"), async (req, re
     if (!Array.isArray(posts)) return res.status(400).json({ message: "Expected array of posts" });
 
     let imported = 0;
+    let skipped = 0;
     for (const p of posts) {
+      const slug = await generateUniqueSlug(p.title);
+
+      // Check exact title match to avoid re-importing same content
+      const [dup] = await db.query("SELECT id FROM blog_posts WHERE title = ?", [p.title]);
+      if (dup.length > 0) {
+        console.log(`[Import] Duplicate blog skipped: "${p.title}"`);
+        skipped++;
+        continue;
+      }
+
       await db.query(
-        "INSERT IGNORE INTO blog_posts (title, slug, image, excerpt, content, author, status, publish_date) VALUES (?, ?, ?, ?, ?, ?, 'published', NOW())",
-        [p.title, p.slug, p.image, p.excerpt, p.content, p.author || "Admin"]
+        "INSERT INTO blog_posts (title, slug, image, excerpt, content, author, status, publish_date) VALUES (?, ?, ?, ?, ?, ?, 'published', NOW())",
+        [p.title, slug, p.image, p.excerpt, p.content, p.author || "Admin"]
       );
       imported++;
     }
-    res.json({ message: `${imported} posts imported` });
+    res.json({ message: `${imported} posts imported, ${skipped} duplicates skipped` });
   } catch (err) {
     res.status(500).json({ message: "Import failed", error: err.message });
   }
@@ -119,7 +240,6 @@ router.post("/import-json", auth, checkPermission("import_json"), async (req, re
 
 // ==================== USERS ====================
 
-// GET /api/admin/users
 router.get("/users", auth, checkPermission("manage_users"), async (req, res) => {
   try {
     const [rows] = await db.query(
@@ -131,7 +251,6 @@ router.get("/users", auth, checkPermission("manage_users"), async (req, res) => 
   }
 });
 
-// POST /api/admin/users — add user
 router.post("/users", auth, checkPermission("manage_users"), async (req, res) => {
   try {
     const { email, password, name, role_id } = req.body;
@@ -145,7 +264,6 @@ router.post("/users", auth, checkPermission("manage_users"), async (req, res) =>
 
 // ==================== ROLES ====================
 
-// GET /api/admin/roles
 router.get("/roles", auth, checkPermission("manage_roles"), async (req, res) => {
   try {
     const [roles] = await db.query("SELECT * FROM roles ORDER BY id");
@@ -162,7 +280,6 @@ router.get("/roles", auth, checkPermission("manage_roles"), async (req, res) => 
   }
 });
 
-// POST /api/admin/roles — create role
 router.post("/roles", auth, checkPermission("manage_roles"), async (req, res) => {
   try {
     const { name, description, permissions } = req.body;
