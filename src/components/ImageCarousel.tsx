@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import ImageModal from "./ImageModal";
 
@@ -10,18 +10,18 @@ interface CarouselImage {
   subtitle: string;
 }
 
-const AUTOPLAY_MS = 4000;
+const AUTOPLAY_MS = 5000;
+const ITEMS_PER_PAGE = 3;
+const ease = [0.25, 0.46, 0.45, 0.94] as const;
 
 const ImageCarousel = () => {
   const [images, setImages] = useState<CarouselImage[]>([]);
-  const [current, setCurrent] = useState(0);
+  const [page, setPage] = useState(0);
   const [modalOpen, setModalOpen] = useState(false);
   const [modalIndex, setModalIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
   const touchStart = useRef(0);
-  const containerRef = useRef<HTMLDivElement>(null);
 
-  // Load images from JSON
   useEffect(() => {
     fetch("/data/carousel-images.json")
       .then((r) => r.json())
@@ -29,52 +29,54 @@ const ImageCarousel = () => {
       .catch(console.error);
   }, []);
 
-  const total = images.length;
+  const totalPages = Math.ceil(images.length / ITEMS_PER_PAGE);
 
   const goNext = useCallback(() => {
-    if (total === 0) return;
-    setCurrent((p) => (p + 1) % total);
-  }, [total]);
+    if (totalPages === 0) return;
+    setPage((p) => (p + 1) % totalPages);
+  }, [totalPages]);
 
   const goPrev = useCallback(() => {
-    if (total === 0) return;
-    setCurrent((p) => (p - 1 + total) % total);
-  }, [total]);
+    if (totalPages === 0) return;
+    setPage((p) => (p - 1 + totalPages) % totalPages);
+  }, [totalPages]);
 
-  // Autoplay
   useEffect(() => {
-    if (isPaused || modalOpen || total === 0) return;
+    if (isPaused || modalOpen || totalPages === 0) return;
     const id = setInterval(goNext, AUTOPLAY_MS);
     return () => clearInterval(id);
-  }, [isPaused, modalOpen, goNext, total]);
+  }, [isPaused, modalOpen, goNext, totalPages]);
 
-  // Swipe support
   const handleTouchStart = (e: React.TouchEvent) => {
     touchStart.current = e.touches[0].clientX;
   };
   const handleTouchEnd = (e: React.TouchEvent) => {
     const diff = touchStart.current - e.changedTouches[0].clientX;
-    if (Math.abs(diff) > 50) {
-      diff > 0 ? goNext() : goPrev();
-    }
+    if (Math.abs(diff) > 50) diff > 0 ? goNext() : goPrev();
   };
 
-  const openModal = (index: number) => {
-    setModalIndex(index);
+  const openModal = (globalIndex: number) => {
+    setModalIndex(globalIndex);
     setModalOpen(true);
   };
 
   if (images.length === 0) return null;
 
+  const startIdx = page * ITEMS_PER_PAGE;
+  const visible = images.slice(startIdx, startIdx + ITEMS_PER_PAGE);
+
   return (
-    <section id="gallery" className="py-28 bg-muted/30">
-      <div className="container mx-auto px-4">
+    <section id="gallery" className="py-28 bg-background relative overflow-hidden">
+      {/* Subtle background accent — matches CategoriesSection */}
+      <div className="absolute inset-0 bg-gradient-to-b from-accent/20 via-transparent to-accent/20 pointer-events-none" />
+
+      <div className="container mx-auto px-4 relative z-10">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          transition={{ duration: 0.6, ease: [0.25, 0.46, 0.45, 0.94] }}
-          className="text-center max-w-2xl mx-auto mb-14"
+          transition={{ duration: 0.6, ease }}
+          className="text-center max-w-2xl mx-auto mb-16"
         >
           <span className="text-primary font-semibold text-xs tracking-[0.2em] uppercase">
             Gallery
@@ -87,93 +89,110 @@ const ImageCarousel = () => {
           </p>
         </motion.div>
 
-        {/* Carousel */}
+        {/* Gallery with navigation */}
         <div
-          ref={containerRef}
-          className="relative max-w-3xl mx-auto overflow-hidden rounded-2xl border border-border bg-card shadow-lg"
+          className="relative"
           onMouseEnter={() => setIsPaused(true)}
           onMouseLeave={() => setIsPaused(false)}
           onTouchStart={handleTouchStart}
           onTouchEnd={handleTouchEnd}
         >
-          {/* Slides */}
-          <div className="relative aspect-[16/9] w-full">
-            {images.map((img, i) => (
-              <motion.div
-                key={img.id}
-                initial={false}
-                animate={{
-                  opacity: i === current ? 1 : 0,
-                  scale: i === current ? 1 : 1.05,
-                }}
-                transition={{ duration: 0.6, ease: "easeInOut" }}
-                className="absolute inset-0 cursor-pointer"
-                style={{ pointerEvents: i === current ? "auto" : "none" }}
-                onClick={() => openModal(i)}
-              >
-                <img
-                  src={img.image}
-                  alt={img.caption}
-                  loading="lazy"
-                  className="w-full h-full object-contain bg-black/5"
-                  draggable={false}
-                />
-                {/* Caption overlay */}
-                <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent px-6 pb-6 pt-16">
-                  <motion.p
-                    key={`cap-${img.id}-${i === current}`}
-                    initial={{ opacity: 0, y: 12 }}
-                    animate={{ opacity: i === current ? 1 : 0, y: i === current ? 0 : 12 }}
-                    transition={{ duration: 0.5, delay: 0.15 }}
-                    className="text-white font-display font-bold text-xl md:text-2xl drop-shadow-lg"
-                  >
-                    {img.caption}
-                  </motion.p>
-                  <motion.p
-                    key={`sub-${img.id}-${i === current}`}
-                    initial={{ opacity: 0, y: 8 }}
-                    animate={{ opacity: i === current ? 0.8 : 0, y: i === current ? 0 : 8 }}
-                    transition={{ duration: 0.5, delay: 0.25 }}
-                    className="text-white/80 text-sm md:text-base mt-1"
-                  >
-                    {img.subtitle}
-                  </motion.p>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-
           {/* Nav arrows */}
-          <button
-            onClick={(e) => { e.stopPropagation(); goPrev(); }}
-            className="absolute left-3 top-1/2 -translate-y-1/2 z-10 rounded-full bg-background/80 border border-border p-2 shadow-lg text-foreground transition-colors hover:bg-accent"
-            aria-label="Previous slide"
-          >
-            <ChevronLeft className="h-5 w-5" />
-          </button>
-          <button
-            onClick={(e) => { e.stopPropagation(); goNext(); }}
-            className="absolute right-3 top-1/2 -translate-y-1/2 z-10 rounded-full bg-background/80 border border-border p-2 shadow-lg text-foreground transition-colors hover:bg-accent"
-            aria-label="Next slide"
-          >
-            <ChevronRight className="h-5 w-5" />
-          </button>
+          {totalPages > 1 && (
+            <>
+              <button
+                onClick={goPrev}
+                className="absolute -left-2 md:-left-5 top-1/2 -translate-y-1/2 z-20 h-10 w-10 rounded-full bg-card border border-border flex items-center justify-center text-foreground transition-all hover:border-primary hover:text-primary"
+                style={{ boxShadow: "var(--card-shadow)" }}
+                aria-label="Previous page"
+              >
+                <ChevronLeft className="h-5 w-5" />
+              </button>
+              <button
+                onClick={goNext}
+                className="absolute -right-2 md:-right-5 top-1/2 -translate-y-1/2 z-20 h-10 w-10 rounded-full bg-card border border-border flex items-center justify-center text-foreground transition-all hover:border-primary hover:text-primary"
+                style={{ boxShadow: "var(--card-shadow)" }}
+                aria-label="Next page"
+              >
+                <ChevronRight className="h-5 w-5" />
+              </button>
+            </>
+          )}
+
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={page}
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -16 }}
+              transition={{ duration: 0.45, ease }}
+              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5"
+            >
+              {visible.map((img, i) => {
+                const globalIdx = startIdx + i;
+                return (
+                  <motion.div
+                    key={img.id}
+                    initial={{ opacity: 0, y: 24 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.5, delay: i * 0.08, ease }}
+                    whileHover={{ y: -6 }}
+                    className="group relative rounded-2xl border border-border bg-card overflow-hidden cursor-pointer transition-shadow duration-300"
+                    style={{
+                      boxShadow: "var(--card-shadow)",
+                    }}
+                    onMouseEnter={(e) => {
+                      (e.currentTarget as HTMLElement).style.boxShadow = "var(--card-shadow-hover)";
+                    }}
+                    onMouseLeave={(e) => {
+                      (e.currentTarget as HTMLElement).style.boxShadow = "var(--card-shadow)";
+                    }}
+                    onClick={() => openModal(globalIdx)}
+                  >
+                    <div className="aspect-[4/3] overflow-hidden">
+                      <img
+                        src={img.image}
+                        alt={img.caption}
+                        loading="lazy"
+                        draggable={false}
+                        className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-110"
+                      />
+                    </div>
+                    {/* Caption */}
+                    <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-foreground/80 via-foreground/40 to-transparent px-5 pb-5 pt-14 transition-opacity">
+                      <p className="text-primary-foreground font-display font-bold text-base md:text-lg drop-shadow-md leading-snug">
+                        {img.caption}
+                      </p>
+                      <p className="text-primary-foreground/70 text-xs md:text-sm mt-1">
+                        {img.subtitle}
+                      </p>
+                    </div>
+                    {/* Hover ring effect */}
+                    <div className="absolute inset-0 rounded-2xl ring-0 ring-primary/0 group-hover:ring-2 group-hover:ring-primary/30 transition-all duration-300 pointer-events-none" />
+                  </motion.div>
+                );
+              })}
+            </motion.div>
+          </AnimatePresence>
 
           {/* Pagination dots */}
-          <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-10 flex gap-1.5">
-            {images.map((_, i) => (
-              <button
-                key={i}
-                onClick={() => setCurrent(i)}
-                className={`h-2 rounded-full transition-all duration-300 ${
-                  i === current
-                    ? "w-6 bg-primary"
-                    : "w-2 bg-white/50 hover:bg-white/80"
-                }`}
-                aria-label={`Go to slide ${i + 1}`}
-              />
-            ))}
-          </div>
+          {totalPages > 1 && (
+            <div className="flex justify-center gap-2 mt-10">
+              {Array.from({ length: totalPages }).map((_, i) => (
+                <button
+                  key={i}
+                  onClick={() => setPage(i)}
+                  className={`h-2.5 rounded-full transition-all duration-300 ${
+                    i === page
+                      ? "w-8 bg-primary"
+                      : "w-2.5 bg-border hover:bg-muted-foreground/40"
+                  }`}
+                  aria-label={`Go to page ${i + 1}`}
+                />
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
