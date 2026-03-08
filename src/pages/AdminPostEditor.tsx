@@ -10,6 +10,8 @@ const AdminPostEditor = () => {
   const navigate = useNavigate();
   const isEdit = !!slug;
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [form, setForm] = useState({
     title: "",
     slug: "",
