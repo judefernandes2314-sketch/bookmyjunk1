@@ -12,21 +12,35 @@ interface CarouselImage {
 
 const AUTOPLAY_MS = 5000;
 const ITEMS_PER_PAGE = 3;
-const ease = [0.25, 0.46, 0.45, 0.94] as const;
+
+/** Preload a single image, resolves when decoded & cached */
+const preloadImage = (src: string): Promise<void> =>
+  new Promise((resolve) => {
+    const img = new Image();
+    img.src = src;
+    img.onload = () => resolve();
+    img.onerror = () => resolve(); // don't block on error
+  });
 
 const ImageCarousel = () => {
   const [images, setImages] = useState<CarouselImage[]>([]);
+  const [allLoaded, setAllLoaded] = useState(false);
   const [page, setPage] = useState(0);
-  const [direction, setDirection] = useState(1); // 1 = forward, -1 = backward
+  const [direction, setDirection] = useState(1);
   const [modalOpen, setModalOpen] = useState(false);
   const [modalIndex, setModalIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
   const touchStart = useRef(0);
 
+  // Load JSON then preload every image before rendering
   useEffect(() => {
     fetch("/data/carousel-images.json")
       .then((r) => r.json())
-      .then((data: CarouselImage[]) => setImages(data))
+      .then(async (data: CarouselImage[]) => {
+        setImages(data);
+        await Promise.all(data.map((d) => preloadImage(d.image)));
+        setAllLoaded(true);
+      })
       .catch(console.error);
   }, []);
 
@@ -45,10 +59,10 @@ const ImageCarousel = () => {
   }, [totalPages]);
 
   useEffect(() => {
-    if (isPaused || modalOpen || totalPages === 0) return;
+    if (isPaused || modalOpen || totalPages === 0 || !allLoaded) return;
     const id = setInterval(goNext, AUTOPLAY_MS);
     return () => clearInterval(id);
-  }, [isPaused, modalOpen, goNext, totalPages]);
+  }, [isPaused, modalOpen, goNext, totalPages, allLoaded]);
 
   const handleTouchStart = (e: React.TouchEvent) => {
     touchStart.current = e.touches[0].clientX;
@@ -63,14 +77,20 @@ const ImageCarousel = () => {
     setModalOpen(true);
   };
 
-  if (images.length === 0) return null;
+  // Don't render until images are preloaded
+  if (!allLoaded || images.length === 0) return null;
 
   const startIdx = page * ITEMS_PER_PAGE;
   const visible = images.slice(startIdx, startIdx + ITEMS_PER_PAGE);
 
+  const slideVariants = {
+    enter: (dir: number) => ({ opacity: 0, x: dir * 100, filter: "blur(0px)" }),
+    center: { opacity: 1, x: 0, filter: "blur(0px)" },
+    exit: (dir: number) => ({ opacity: 0, x: dir * -100, filter: "blur(0px)" }),
+  };
+
   return (
     <section id="gallery" className="py-28 bg-background relative overflow-hidden">
-      {/* Subtle background accent — matches CategoriesSection */}
       <div className="absolute inset-0 bg-gradient-to-b from-accent/20 via-transparent to-accent/20 pointer-events-none" />
 
       <div className="container mx-auto px-4 relative z-10">
@@ -78,7 +98,7 @@ const ImageCarousel = () => {
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          transition={{ duration: 0.6, ease }}
+          transition={{ duration: 0.6, ease: [0.25, 0.46, 0.45, 0.94] }}
           className="text-center max-w-2xl mx-auto mb-16"
         >
           <span className="text-primary font-semibold text-xs tracking-[0.2em] uppercase">
@@ -92,7 +112,6 @@ const ImageCarousel = () => {
           </p>
         </motion.div>
 
-        {/* Gallery with navigation */}
         <div
           className="relative"
           onMouseEnter={() => setIsPaused(true)}
@@ -100,7 +119,6 @@ const ImageCarousel = () => {
           onTouchStart={handleTouchStart}
           onTouchEnd={handleTouchEnd}
         >
-          {/* Nav arrows */}
           {totalPages > 1 && (
             <>
               <button
@@ -122,75 +140,78 @@ const ImageCarousel = () => {
             </>
           )}
 
-          <AnimatePresence mode="popLayout" custom={direction}>
-            <motion.div
-              key={page}
-              custom={direction}
-              initial="enter"
-              animate="center"
-              exit="exit"
-              variants={{
-                enter: (dir: number) => ({ opacity: 0, x: dir * 120, scale: 0.97 }),
-                center: { opacity: 1, x: 0, scale: 1 },
-                exit: (dir: number) => ({ opacity: 0, x: dir * -120, scale: 0.97 }),
-              }}
-              transition={{ duration: 0.5, ease: [0.32, 0.72, 0, 1] }}
-              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5"
-            >
-              {visible.map((img, i) => {
-                const globalIdx = startIdx + i;
-                return (
-                  <motion.div
-                    key={img.id}
-                    initial={{ opacity: 0, scale: 0.92 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ duration: 0.4, delay: i * 0.1, ease: [0.32, 0.72, 0, 1] }}
-                    whileHover={{ y: -6, transition: { duration: 0.25, ease: "easeOut" } }}
-                    className="group relative rounded-2xl border border-border bg-card overflow-hidden cursor-pointer transition-shadow duration-300"
-                    style={{
-                      boxShadow: "var(--card-shadow)",
-                    }}
-                    onMouseEnter={(e) => {
-                      (e.currentTarget as HTMLElement).style.boxShadow = "var(--card-shadow-hover)";
-                    }}
-                    onMouseLeave={(e) => {
-                      (e.currentTarget as HTMLElement).style.boxShadow = "var(--card-shadow)";
-                    }}
-                    onClick={() => openModal(globalIdx)}
-                  >
-                    <div className="aspect-[4/3] overflow-hidden bg-muted/30">
-                      <img
-                        src={img.image}
-                        alt={img.caption}
-                        loading="lazy"
-                        draggable={false}
-                        className="w-full h-full object-contain transition-transform duration-700 ease-out group-hover:scale-105"
-                      />
-                    </div>
-                    {/* Caption */}
-                    <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-foreground/80 via-foreground/40 to-transparent px-5 pb-5 pt-14 transition-opacity">
-                      <p className="text-primary-foreground font-display font-bold text-base md:text-lg drop-shadow-md leading-snug">
-                        {img.caption}
-                      </p>
-                      <p className="text-primary-foreground/70 text-xs md:text-sm mt-1">
-                        {img.subtitle}
-                      </p>
-                    </div>
-                    {/* Hover ring effect */}
-                    <div className="absolute inset-0 rounded-2xl ring-0 ring-primary/0 group-hover:ring-2 group-hover:ring-primary/30 transition-all duration-300 pointer-events-none" />
-                  </motion.div>
-                );
-              })}
-            </motion.div>
-          </AnimatePresence>
+          <div className="overflow-hidden">
+            <AnimatePresence mode="wait" custom={direction} initial={false}>
+              <motion.div
+                key={page}
+                custom={direction}
+                variants={slideVariants}
+                initial="enter"
+                animate="center"
+                exit="exit"
+                transition={{
+                  x: { type: "spring", stiffness: 280, damping: 30, mass: 0.8 },
+                  opacity: { duration: 0.25 },
+                }}
+                className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5"
+              >
+                {visible.map((img, i) => {
+                  const globalIdx = startIdx + i;
+                  return (
+                    <motion.div
+                      key={img.id}
+                      initial={{ opacity: 0, y: 12 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{
+                        duration: 0.35,
+                        delay: i * 0.08,
+                        ease: [0.25, 0.46, 0.45, 0.94],
+                      }}
+                      whileHover={{ y: -6, transition: { duration: 0.25, ease: "easeOut" } }}
+                      className="group relative rounded-2xl border border-border bg-card overflow-hidden cursor-pointer transition-shadow duration-300"
+                      style={{ boxShadow: "var(--card-shadow)" }}
+                      onMouseEnter={(e) => {
+                        (e.currentTarget as HTMLElement).style.boxShadow = "var(--card-shadow-hover)";
+                      }}
+                      onMouseLeave={(e) => {
+                        (e.currentTarget as HTMLElement).style.boxShadow = "var(--card-shadow)";
+                      }}
+                      onClick={() => openModal(globalIdx)}
+                    >
+                      <div className="aspect-[4/3] overflow-hidden bg-muted/30">
+                        <img
+                          src={img.image}
+                          alt={img.caption}
+                          draggable={false}
+                          decoding="async"
+                          className="w-full h-full object-contain"
+                        />
+                      </div>
+                      <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-foreground/80 via-foreground/40 to-transparent px-5 pb-5 pt-14">
+                        <p className="text-primary-foreground font-display font-bold text-base md:text-lg drop-shadow-md leading-snug">
+                          {img.caption}
+                        </p>
+                        <p className="text-primary-foreground/70 text-xs md:text-sm mt-1">
+                          {img.subtitle}
+                        </p>
+                      </div>
+                      <div className="absolute inset-0 rounded-2xl ring-0 ring-primary/0 group-hover:ring-2 group-hover:ring-primary/30 transition-all duration-300 pointer-events-none" />
+                    </motion.div>
+                  );
+                })}
+              </motion.div>
+            </AnimatePresence>
+          </div>
 
-          {/* Pagination dots */}
           {totalPages > 1 && (
             <div className="flex justify-center gap-2 mt-10">
               {Array.from({ length: totalPages }).map((_, i) => (
                 <button
                   key={i}
-                  onClick={() => setPage(i)}
+                  onClick={() => {
+                    setDirection(i > page ? 1 : -1);
+                    setPage(i);
+                  }}
                   className={`h-2.5 rounded-full transition-all duration-300 ${
                     i === page
                       ? "w-8 bg-primary"
@@ -204,7 +225,6 @@ const ImageCarousel = () => {
         </div>
       </div>
 
-      {/* Fullscreen modal */}
       <ImageModal
         images={images}
         currentIndex={modalIndex}
