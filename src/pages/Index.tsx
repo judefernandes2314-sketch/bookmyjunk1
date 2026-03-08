@@ -8,6 +8,7 @@ import ImageCarousel from "@/components/ImageCarousel";
 import AppDownloadSection from "@/components/AppDownloadSection";
 import VideosSection from "@/components/VideosSection";
 import FAQSection from "@/components/FAQSection";
+import BlogSection from "@/components/BlogSection";
 import Footer from "@/components/Footer";
 import StickyBottomCTA from "@/components/StickyBottomCTA";
 import WhatsAppFloat from "@/components/WhatsAppFloat";
@@ -26,7 +27,7 @@ const Index = () => {
         <ImageCarousel />
         <AppDownloadSection />
         <FAQSection />
-        
+        <BlogSection />
       </main>
       <Footer />
       <StickyBottomCTA />
