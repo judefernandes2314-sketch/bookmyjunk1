@@ -70,21 +70,13 @@ const BlogPost = () => {
       <Navbar />
       <BlogSEO post={post} />
 
-      {/* Hero image — full-bleed */}
-      <div className="pt-20">
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.6 }}
-          className="relative w-full h-[320px] md:h-[420px] overflow-hidden bg-muted"
-        >
-          <img
-            src={post.image}
-            alt={post.title}
-            className="w-full h-full object-cover"
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
-        </motion.div>
+      {/* Hero image */}
+      <div className="pt-24 container mx-auto px-4 max-w-3xl">
+        <img
+          src={post.image}
+          alt={post.title}
+          className="w-full rounded-2xl object-cover max-h-[420px]"
+        />
       </div>
 
       <main className="pb-24 bg-background min-h-screen">
