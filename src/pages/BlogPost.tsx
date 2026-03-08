@@ -19,6 +19,11 @@ const BlogPost = () => {
       setPost(p);
       setLoading(false);
     });
+    // Track view
+    const API_BASE = import.meta.env.VITE_API_URL || "";
+    if (API_BASE) {
+      fetch(`${API_BASE}/api/blog/view/${slug}`, { method: "POST" }).catch(() => {});
+    }
   }, [slug]);
 
   if (loading) {

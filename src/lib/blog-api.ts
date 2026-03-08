@@ -14,6 +14,21 @@ export interface BlogPost {
   seo_description?: string;
   seo_keywords?: string;
   featured_homepage?: boolean;
+  views?: number;
+}
+
+export interface AnalyticsSummary {
+  total_posts: number;
+  published_posts: number;
+  draft_posts: number;
+  total_views: number;
+}
+
+export interface AnalyticsPost {
+  title: string;
+  slug: string;
+  views: number;
+  publish_date: string;
 }
 
 const API_BASE = import.meta.env.VITE_API_URL || "";
