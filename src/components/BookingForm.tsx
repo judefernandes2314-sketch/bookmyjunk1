@@ -52,7 +52,7 @@ const BookingForm = () => {
         fullname: form.name,
         phone: form.phone,
         city: form.location,
-        items: form.items.join(", "),
+        items: form.items.join(", ") + (form.items.includes("Other Electronics") && form.otherText ? ` (${form.otherText})` : ""),
         quantity: form.quantity,
         notes: form.notes
       })
@@ -64,21 +64,14 @@ const BookingForm = () => {
 
     toast.success("Pickup request submitted! We'll contact you soon.");
 
-    setForm({
-      name: "",
-      phone: "",
-      location: "",
-      items: [],
-      quantity: "",
-      notes: ""
-    });
+    setForm({ name: "", phone: "", location: "", items: [], otherText: "", quantity: "", notes: "" });
 
   } catch (error) {
     toast.error("Something went wrong. Please try again.");
   }
 };
     toast.success("Pickup request submitted! We'll contact you within 24 hours.");
-    setForm({ name: "", phone: "", location: "", items: [], quantity: "", notes: "" });
+    setForm({ name: "", phone: "", location: "", items: [], otherText: "", quantity: "", notes: "" });
   };
 
   const toggleItem = (item: string) => {
@@ -155,6 +148,16 @@ const BookingForm = () => {
                 </button>
               ))}
             </div>
+            {form.items.includes("Other Electronics") && (
+              <input
+                type="text"
+                value={form.otherText}
+                onChange={(e) => setForm({ ...form, otherText: e.target.value })}
+                placeholder="Please specify your electronics..."
+                maxLength={200}
+                className={`${inputCls} mt-3`}
+              />
+            )}
           </div>
 
           <div className="mb-5">
