@@ -30,16 +30,17 @@ const ImageCarousel = () => {
   }, []);
 
   const total = images.length;
+  const maxIndex = Math.max(0, total - 3); // desktop shows 3 at a time
 
   const goNext = useCallback(() => {
     if (total === 0) return;
-    setCurrent((p) => (p + 1) % total);
-  }, [total]);
+    setCurrent((p) => (p >= maxIndex ? 0 : p + 1));
+  }, [total, maxIndex]);
 
   const goPrev = useCallback(() => {
     if (total === 0) return;
-    setCurrent((p) => (p - 1 + total) % total);
-  }, [total]);
+    setCurrent((p) => (p <= 0 ? maxIndex : p - 1));
+  }, [total, maxIndex]);
 
   // Autoplay
   useEffect(() => {
@@ -90,57 +91,73 @@ const ImageCarousel = () => {
         {/* Carousel */}
         <div
           ref={containerRef}
-          className="relative max-w-5xl mx-auto overflow-hidden rounded-2xl border border-border bg-card shadow-lg"
+          className="relative max-w-6xl mx-auto overflow-hidden"
           onMouseEnter={() => setIsPaused(true)}
           onMouseLeave={() => setIsPaused(false)}
           onTouchStart={handleTouchStart}
           onTouchEnd={handleTouchEnd}
         >
-          {/* Slides */}
-          <div className="relative aspect-[16/9] w-full">
+          <motion.div
+            className="flex gap-4"
+            animate={{ x: `calc(-${current} * (33.333% + 0.333rem))` }}
+            transition={{ duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] }}
+          >
             {images.map((img, i) => (
-              <motion.div
+              <div
                 key={img.id}
-                initial={false}
-                animate={{
-                  opacity: i === current ? 1 : 0,
-                  scale: i === current ? 1 : 1.05,
-                }}
-                transition={{ duration: 0.6, ease: "easeInOut" }}
-                className="absolute inset-0 cursor-pointer"
-                style={{ pointerEvents: i === current ? "auto" : "none" }}
+                className="min-w-[calc(33.333%-0.667rem)] flex-shrink-0 cursor-pointer group hidden md:block"
                 onClick={() => openModal(i)}
               >
-                <img
-                  src={img.image}
-                  alt={img.caption}
-                  loading="lazy"
-                  className="w-full h-full object-contain bg-black/5"
-                  draggable={false}
-                />
-                {/* Caption overlay */}
-                <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent px-6 pb-6 pt-16">
-                  <motion.p
-                    key={`cap-${img.id}-${i === current}`}
-                    initial={{ opacity: 0, y: 12 }}
-                    animate={{ opacity: i === current ? 1 : 0, y: i === current ? 0 : 12 }}
-                    transition={{ duration: 0.5, delay: 0.15 }}
-                    className="text-white font-display font-bold text-xl md:text-2xl drop-shadow-lg"
-                  >
-                    {img.caption}
-                  </motion.p>
-                  <motion.p
-                    key={`sub-${img.id}-${i === current}`}
-                    initial={{ opacity: 0, y: 8 }}
-                    animate={{ opacity: i === current ? 0.8 : 0, y: i === current ? 0 : 8 }}
-                    transition={{ duration: 0.5, delay: 0.25 }}
-                    className="text-white/80 text-sm md:text-base mt-1"
-                  >
-                    {img.subtitle}
-                  </motion.p>
+                <div className="relative overflow-hidden rounded-2xl border border-border bg-card shadow-md aspect-[4/3]">
+                  <img
+                    src={img.image}
+                    alt={img.caption}
+                    loading="lazy"
+                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                    draggable={false}
+                  />
+                  <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent px-4 pb-4 pt-12">
+                    <p className="text-white font-display font-semibold text-sm md:text-base drop-shadow-lg">
+                      {img.caption}
+                    </p>
+                    <p className="text-white/70 text-xs mt-0.5">{img.subtitle}</p>
+                  </div>
                 </div>
-              </motion.div>
+              </div>
             ))}
+          </motion.div>
+
+          {/* Mobile: single slide */}
+          <div className="md:hidden">
+            <motion.div
+              className="flex"
+              animate={{ x: `calc(-${current} * 100%)` }}
+              transition={{ duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] }}
+            >
+              {images.map((img, i) => (
+                <div
+                  key={img.id}
+                  className="min-w-full flex-shrink-0 cursor-pointer"
+                  onClick={() => openModal(i)}
+                >
+                  <div className="relative overflow-hidden rounded-2xl border border-border bg-card shadow-md aspect-[4/3] mx-1">
+                    <img
+                      src={img.image}
+                      alt={img.caption}
+                      loading="lazy"
+                      className="w-full h-full object-cover"
+                      draggable={false}
+                    />
+                    <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent px-4 pb-4 pt-12">
+                      <p className="text-white font-display font-semibold text-base drop-shadow-lg">
+                        {img.caption}
+                      </p>
+                      <p className="text-white/70 text-xs mt-0.5">{img.subtitle}</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </motion.div>
           </div>
 
           {/* Nav arrows */}
