@@ -13,6 +13,7 @@ export interface BlogPost {
   seo_title?: string;
   seo_description?: string;
   seo_keywords?: string;
+  featured_homepage?: boolean;
 }
 
 const API_BASE = import.meta.env.VITE_API_URL || "";
@@ -52,6 +53,10 @@ export async function getPostBySlug(slug: string): Promise<BlogPost | null> {
 }
 
 export async function getLatestPosts(count = 3): Promise<BlogPost[]> {
+  // Try homepage endpoint first
+  const homepage = await fetchFromApi<BlogPost[]>("/api/blog/homepage");
+  if (homepage && homepage.length) return homepage.slice(0, count);
+  
   const posts = await getAllPosts();
   return posts
     .sort((a, b) => new Date(b.publish_date || b.created_at || "").getTime() - new Date(a.publish_date || a.created_at || "").getTime())
