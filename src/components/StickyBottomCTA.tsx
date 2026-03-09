@@ -36,9 +36,15 @@ const StickyBottomCTA = () => {
                 <ArrowUp className="h-4 w-4" /> Book Pickup
               </a>
               <motion.a
-                href="https://play.google.com/store"
-                target="_blank"
-                rel="noopener noreferrer"
+                href="#"
+                onClick={(e) => {
+                  e.preventDefault();
+                  const ua = navigator.userAgent || (navigator as any).vendor || (window as any).opera;
+                  const isIOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+                  const iosUrl = "https://apps.apple.com/us/app/bookmyjunk/id1595834562";
+                  const androidUrl = "https://play.google.com/store/apps/details?id=com.bmj.bookmyjunk&hl=en_IN";
+                  window.open(isIOS ? iosUrl : androidUrl, "_blank", "noopener,noreferrer");
+                }}
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 className="bg-primary text-primary-foreground px-5 py-2 rounded-lg text-sm font-semibold hover:opacity-90 transition flex items-center gap-2"
