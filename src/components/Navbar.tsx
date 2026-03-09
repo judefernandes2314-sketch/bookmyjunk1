@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Menu, X, Download } from "lucide-react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import logoTBG from "@/assets/BMJ_Logo.webp";
 
 const links = [
@@ -15,7 +15,15 @@ const links = [
 const Navbar = () => {
   const [open, setOpen] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
   const isHome = location.pathname === "/";
+
+  const handleHashClick = (e: React.MouseEvent, href: string) => {
+    if (!isHome) {
+      e.preventDefault();
+      navigate("/" + href);
+    }
+  };
 
   const getHref = (href: string) => {
     if (href.startsWith("/")) return href;
