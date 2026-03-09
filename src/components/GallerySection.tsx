@@ -38,7 +38,7 @@ const GallerySection = () => {
   const [selectedImage, setSelectedImage] = useState<typeof galleryImages[0] | null>(null);
 
   return (
-    <section id="gallery" className="py-28 bg-muted/30">
+    <section id="gallery" className="py-20 bg-muted/30">
       <div className="container mx-auto px-4">
         <motion.div
           initial={{ opacity: 0, y: 20 }}

@@ -23,7 +23,7 @@ const ease = [0.25, 0.46, 0.45, 0.94] as const;
 
 const CategoriesSection = () => {
   return (
-    <section id="categories" className="py-28 bg-background relative overflow-hidden">
+    <section id="categories" className="py-20 bg-background relative overflow-hidden">
       {/* Subtle background accent */}
       <div className="absolute inset-0 bg-gradient-to-b from-accent/20 via-transparent to-accent/20 pointer-events-none" />
 

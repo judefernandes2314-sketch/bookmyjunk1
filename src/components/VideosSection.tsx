@@ -20,7 +20,7 @@ const item = {
 };
 
 const VideosSection = () => (
-  <section id="videos" className="py-28 bg-background">
+  <section id="videos" className="py-20 bg-background">
     <div className="container mx-auto px-4">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
