@@ -5,6 +5,7 @@ const NodeCache = require("node-cache");
 const blogRoutes = require("./routes/blog");
 const adminRoutes = require("./routes/admin");
 const analyticsRoutes = require("./routes/analytics");
+const bookingRoutes = require("./routes/booking");
 const db = require("./db");
 
 const app = express();
