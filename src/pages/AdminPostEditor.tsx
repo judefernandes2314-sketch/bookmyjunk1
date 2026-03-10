@@ -56,11 +56,9 @@ const AdminPostEditor = () => {
     seo_keywords: "",
   });
 
-  /* keep form.content in sync with editor */
+  /* Sync editor HTML into form — only on blur/save, NOT on every keystroke */
   const syncContent = useCallback(() => {
-    if (editorRef.current) {
-      setForm((f) => ({ ...f, content: editorRef.current!.innerHTML }));
-    }
+    // intentionally no-op on input; we read innerHTML directly when needed
   }, []);
 
   useEffect(() => {
@@ -179,9 +177,8 @@ const AdminPostEditor = () => {
   };
 
   const handleSave = async () => {
-    if (editorRef.current) {
-      setForm((f) => ({ ...f, content: editorRef.current!.innerHTML }));
-    }
+    const currentContent = editorRef.current?.innerHTML || form.content;
+    const payload = { ...form, content: currentContent };
     setSaving(true);
     const API_BASE = import.meta.env.VITE_API_URL || "https://api.jambologos.com";
     const url = isEdit ? `${API_BASE}/api/admin/posts/${slug}` : `${API_BASE}/api/admin/posts`;
@@ -191,7 +188,7 @@ const AdminPostEditor = () => {
         "Content-Type": "application/json",
         Authorization: `Bearer ${localStorage.getItem("admin_token")}`,
       },
-      body: JSON.stringify(form),
+      body: JSON.stringify(payload),
     });
     setSaving(false);
     navigate("/admin/dashboard");
@@ -343,15 +340,12 @@ const AdminPostEditor = () => {
                     <TBtn icon={Redo2} label="Redo" onClick={() => exec("redo")} />
                   </div>
 
-                  {/* Editable area */}
+                  {/* Editable area — no dangerouslySetInnerHTML to avoid cursor resets */}
                   <div
                     ref={editorRef}
                     contentEditable
                     suppressContentEditableWarning
-                    onInput={syncContent}
-                    onBlur={syncContent}
                     className="blog-prose min-h-[320px] max-h-[600px] overflow-y-auto px-6 py-5 focus:outline-none"
-                    dangerouslySetInnerHTML={{ __html: form.content }}
                   />
                 </div>
                 <p className="text-xs text-muted-foreground mt-1.5">
