@@ -340,15 +340,12 @@ const AdminPostEditor = () => {
                     <TBtn icon={Redo2} label="Redo" onClick={() => exec("redo")} />
                   </div>
 
-                  {/* Editable area */}
+                  {/* Editable area — no dangerouslySetInnerHTML to avoid cursor resets */}
                   <div
                     ref={editorRef}
                     contentEditable
                     suppressContentEditableWarning
-                    onInput={syncContent}
-                    onBlur={syncContent}
                     className="blog-prose min-h-[320px] max-h-[600px] overflow-y-auto px-6 py-5 focus:outline-none"
-                    dangerouslySetInnerHTML={{ __html: form.content }}
                   />
                 </div>
                 <p className="text-xs text-muted-foreground mt-1.5">
