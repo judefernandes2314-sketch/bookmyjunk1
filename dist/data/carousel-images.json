@@ -1,0 +1,56 @@
+[
+  {
+    "id": 1,
+    "image": "/carousel/image1.webp",
+    "caption": "Community E-Waste Collection Team",
+    "subtitle": "Best E-waste Recycler in Mumbai"
+  },
+  {
+    "id": 2,
+    "image": "/carousel/image2.webp",
+    "caption": "Certified E-Waste Collection",
+    "subtitle": "E-waste Management Solutions"
+  },
+  {
+    "id": 3,
+    "image": "/carousel/image3.webp",
+    "caption": "Collection Drive",
+    "subtitle": "Electronic waste collection centre near you"
+  },
+  {
+    "id": 4,
+    "image": "/carousel/image4.webp",
+    "caption": "Our Fleet Ready for Pickup",
+    "subtitle": "E-waste collection van service"
+  },
+  {
+    "id": 5,
+    "image": "/carousel/image5.webp",
+    "caption": "Awareness Drive in Schools",
+    "subtitle": "E-waste awareness and education"
+  },
+  {
+    "id": 6,
+    "image": "/carousel/image6.webp",
+    "caption": "Book My Junk Promotion",
+    "subtitle": "Eco-friendly e-waste disposal"
+  },
+  {
+    "id": 7,
+    "image": "/carousel/image7.webp",
+    "caption": "Free Collection at Doorstep",
+    "subtitle": "Free e-waste pickup service"
+  },
+  {
+    "id": 8,
+    "image": "/carousel/image8.webp",
+    "caption": "Book My Junk Team",
+    "subtitle": "Electronic scrap recycling service"
+  },
+  {
+    "id": 9,
+    "image": "/carousel/image9.webp",
+    "caption": "Our Fleet of Vans in Action",
+    "subtitle": "Electronic waste pickup service"
+  }
+]
