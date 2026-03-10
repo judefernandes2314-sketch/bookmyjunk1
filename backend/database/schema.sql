@@ -81,6 +81,22 @@ CREATE TABLE IF NOT EXISTS admin_approvals (
 -- Foreign key for admin_users.role_id
 ALTER TABLE admin_users ADD FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE SET NULL;
 
+-- Bookings table (e-waste pickup requests)
+CREATE TABLE IF NOT EXISTS bookings (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(100) NOT NULL,
+  phone VARCHAR(15) NOT NULL,
+  location VARCHAR(200) NOT NULL,
+  items TEXT NOT NULL,
+  other_electronics VARCHAR(200) DEFAULT NULL,
+  quantity VARCHAR(50) NOT NULL,
+  notes TEXT DEFAULT NULL,
+  status ENUM('pending', 'contacted', 'picked_up', 'cancelled') DEFAULT 'pending',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_status (status),
+  INDEX idx_created (created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- ======================================
 -- Seed data
 -- ======================================

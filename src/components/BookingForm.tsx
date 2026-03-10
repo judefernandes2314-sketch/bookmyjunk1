@@ -15,50 +15,41 @@ const inputCls = "w-full rounded-xl border border-input bg-background px-4 py-3.
 const BookingForm = () => {
   const [form, setForm] = useState({ name: "", phone: "", location: "", items: [] as string[], otherText: "", quantity: "", notes: "" });
 
-    const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
 
-  if (!form.name.trim() || !form.phone.trim() || !form.location.trim() || form.items.length === 0 || !form.quantity.trim()) {
-    toast.error("Please fill in all required fields");
-    return;
-  }
-
-  if (!/^\d{10}$/.test(form.phone.trim())) {
-    toast.error("Please enter a valid 10-digit phone number");
-    return;
-  }
-
-  try {
-    const res = await fetch("https://api.jambologos.com/api/booking", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        name: form.name,
-        phone: form.phone,
-        location: form.location,
-        items: form.items,
-        otherElectronics: form.otherText,
-        quantity: form.quantity,
-        notes: form.notes
-      })
-    });
-
-    if (!res.ok) {
-      throw new Error("Server error");
+    if (!form.name.trim() || !form.phone.trim() || !form.location.trim() || form.items.length === 0 || !form.quantity.trim()) {
+      toast.error("Please fill in all required fields");
+      return;
     }
 
-    toast.success("Pickup request submitted! We'll contact you soon.");
+    if (!/^\d{10}$/.test(form.phone.trim())) {
+      toast.error("Please enter a valid 10-digit phone number");
+      return;
+    }
 
-    setForm({ name: "", phone: "", location: "", items: [], otherText: "", quantity: "", notes: "" });
+    try {
+      const res = await fetch("https://api.jambologos.com/api/booking", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: form.name.trim(),
+          phone: form.phone.trim(),
+          location: form.location.trim(),
+          items: form.items,
+          otherElectronics: form.otherText.trim(),
+          quantity: form.quantity.trim(),
+          notes: form.notes.trim(),
+        }),
+      });
 
-  } catch (error) {
-    toast.error("Something went wrong. Please try again.");
-  }
-};
-    toast.success("Pickup request submitted! We'll contact you within 24 hours.");
-    setForm({ name: "", phone: "", location: "", items: [], otherText: "", quantity: "", notes: "" });
+      if (!res.ok) throw new Error("Server error");
+
+      toast.success("Pickup request submitted! We'll contact you within 24 hours.");
+      setForm({ name: "", phone: "", location: "", items: [], otherText: "", quantity: "", notes: "" });
+    } catch {
+      toast.error("Something went wrong. Please try again.");
+    }
   };
 
   const toggleItem = (item: string) => {

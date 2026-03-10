@@ -26,6 +26,7 @@ app.set("trust proxy", true);
 app.use("/api/blog", blogRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/admin/analytics", analyticsRoutes);
+app.use("/api/booking", bookingRoutes);
 
 // Health check
 app.get("/api/health", (req, res) => res.json({ status: "ok" }));
