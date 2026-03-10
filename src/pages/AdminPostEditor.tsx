@@ -178,8 +178,11 @@ const AdminPostEditor = () => {
   const handleSave = async () => {
     // sync one last time
     if (editorRef.current) {
-      form.content = editorRef.current.innerHTML;
-    }
+  setForm((f) => ({
+    ...f,
+    content: editorRef.current!.innerHTML
+  }));
+}
     setSaving(true);
     const API_BASE = import.meta.env.VITE_API_URL || "";
     if (API_BASE) {
