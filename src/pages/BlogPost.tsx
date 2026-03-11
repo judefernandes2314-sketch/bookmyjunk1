@@ -6,7 +6,7 @@ import DOMPurify from "dompurify";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import BlogSEO from "@/components/BlogSEO";
-import { getPostBySlug, type BlogPost as BlogPostType } from "@/lib/blog-api";
+import { getPostBySlug, resolveImageUrl, type BlogPost as BlogPostType } from "@/lib/blog-api";
 
 const BlogPost = () => {
   const { slug } = useParams<{ slug: string }>();
