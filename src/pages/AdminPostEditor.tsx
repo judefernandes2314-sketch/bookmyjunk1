@@ -8,7 +8,10 @@ import {
   Type,
 } from "lucide-react";
 import Navbar from "@/components/Navbar";
-import { getPostBySlug, type BlogPost } from "@/lib/blog-api";
+import { getPostBySlug, resolveImageUrl, isTokenValid, clearAuth, type BlogPost } from "@/lib/blog-api";
+import { useToast } from "@/hooks/use-toast";
+
+const API_BASE = import.meta.env.VITE_API_URL || "https://api.jambologos.com";
 
 /* ── Toolbar button ── */
 const TBtn = ({
@@ -35,6 +38,7 @@ const Divider = () => <div className="w-px h-6 bg-border mx-1" />;
 const AdminPostEditor = () => {
   const { slug } = useParams();
   const navigate = useNavigate();
+  const { toast } = useToast();
   const isEdit = !!slug;
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -56,14 +60,12 @@ const AdminPostEditor = () => {
     seo_keywords: "",
   });
 
-  /* Sync editor HTML into form — only on blur/save, NOT on every keystroke */
-  const syncContent = useCallback(() => {
-    // intentionally no-op on input; we read innerHTML directly when needed
-  }, []);
+  const syncContent = useCallback(() => {}, []);
 
   useEffect(() => {
-    if (!localStorage.getItem("admin_token")) {
-      navigate("/admin");
+    if (!isTokenValid()) {
+      clearAuth();
+      navigate("/admin", { replace: true });
       return;
     }
     if (isEdit && slug) {
@@ -106,9 +108,7 @@ const AdminPostEditor = () => {
     syncContent();
   };
 
-  const formatBlock = (tag: string) => {
-    exec("formatBlock", tag);
-  };
+  const formatBlock = (tag: string) => exec("formatBlock", tag);
 
   const insertLink = () => {
     const url = prompt("Enter URL:");
@@ -118,47 +118,33 @@ const AdminPostEditor = () => {
   const handleContentImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const API_BASE = import.meta.env.VITE_API_URL || "";
-
     let imageUrl: string;
-    if (!API_BASE) {
-      imageUrl = URL.createObjectURL(file);
-    } else {
-      setContentUploading(true);
-      const fd = new FormData();
-      fd.append("image", file);
-      try {
-        const res = await fetch(`${API_BASE}/api/admin/upload`, {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("admin_token")}`,
-          },
-          body: fd,
-        });
-        const data = await res.json();
-        imageUrl = `${API_BASE}${data.url}`;
-      } catch (err) {
-        console.error(err);
-        setContentUploading(false);
-        return;
-      }
+    setContentUploading(true);
+    const fd = new FormData();
+    fd.append("image", file);
+    try {
+      const res = await fetch(`${API_BASE}/api/admin/upload`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${localStorage.getItem("admin_token")}` },
+        body: fd,
+      });
+      const data = await res.json();
+      imageUrl = `${API_BASE}${data.url}`;
+    } catch (err) {
+      console.error(err);
       setContentUploading(false);
+      return;
     }
+    setContentUploading(false);
     if (imageUrl) {
       exec("insertHTML", `<img src="${imageUrl}" alt="Blog image" style="max-width:100%;border-radius:12px;margin:16px 0;" />`);
     }
-    // reset input
     if (contentImageRef.current) contentImageRef.current.value = "";
   };
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const API_BASE = import.meta.env.VITE_API_URL || "";
-    if (!API_BASE) {
-      setForm((f) => ({ ...f, image: URL.createObjectURL(file) }));
-      return;
-    }
     setUploading(true);
     const fd = new FormData();
     fd.append("image", file);
@@ -169,9 +155,12 @@ const AdminPostEditor = () => {
         body: fd,
       });
       const data = await res.json();
-      if (data.url) setForm((f) => ({ ...f, image: data.url }));
+      // Store full URL
+      const fullUrl = `${API_BASE}${data.url}`;
+      setForm((f) => ({ ...f, image: fullUrl }));
     } catch (err) {
       console.error("Upload failed", err);
+      toast({ title: "Upload failed", description: "Could not upload image.", variant: "destructive" });
     }
     setUploading(false);
   };
@@ -179,20 +168,37 @@ const AdminPostEditor = () => {
   const handleSave = async () => {
     const currentContent = editorRef.current?.innerHTML || form.content;
     const payload = { ...form, content: currentContent };
+
+    // Auto-set publish_date if changing to published
+    if (payload.status === "published") {
+      // The backend handles publish_date auto-set, but we include it for clarity
+    }
+
     setSaving(true);
-    const API_BASE = import.meta.env.VITE_API_URL || "https://api.jambologos.com";
-    const url = isEdit ? `${API_BASE}/api/admin/posts/${slug}` : `${API_BASE}/api/admin/posts`;
-    await fetch(url, {
-      method: isEdit ? "PUT" : "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${localStorage.getItem("admin_token")}`,
-      },
-      body: JSON.stringify(payload),
-    });
+    try {
+      const url = isEdit ? `${API_BASE}/api/admin/posts/${slug}` : `${API_BASE}/api/admin/posts`;
+      const res = await fetch(url, {
+        method: isEdit ? "PUT" : "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("admin_token")}`,
+        },
+        body: JSON.stringify(payload),
+      });
+      if (res.ok) {
+        toast({ title: isEdit ? "Post updated" : "Post created", description: `"${form.title}" has been ${isEdit ? "updated" : "created"} successfully.` });
+        navigate("/admin/dashboard");
+      } else {
+        const data = await res.json().catch(() => ({}));
+        toast({ title: "Error", description: data.message || "Failed to save post.", variant: "destructive" });
+      }
+    } catch {
+      toast({ title: "Error", description: "Could not connect to server.", variant: "destructive" });
+    }
     setSaving(false);
-    navigate("/admin/dashboard");
   };
+
+  const seoDescLen = form.seo_description.length;
 
   return (
     <>
@@ -208,13 +214,6 @@ const AdminPostEditor = () => {
                 <ArrowLeft className="h-4 w-4" /> Back
               </button>
               <div className="flex gap-2">
-                <button
-                  onClick={() => setForm((f) => ({ ...f, status: f.status === "published" ? "draft" : "published" }))}
-                  className="inline-flex items-center gap-1.5 border border-border px-3 py-2 rounded-lg text-sm font-medium hover:bg-muted transition-colors"
-                >
-                  <Eye className="h-4 w-4" />
-                  {form.status === "published" ? "Unpublish" : "Publish"}
-                </button>
                 <button
                   onClick={handleSave}
                   disabled={saving || !form.title}
@@ -256,7 +255,7 @@ const AdminPostEditor = () => {
                     value={form.image}
                     onChange={(e) => setForm((f) => ({ ...f, image: e.target.value }))}
                     className="flex-1 px-4 py-2.5 rounded-lg border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                    placeholder="/uploads/image.jpg or URL"
+                    placeholder="https://api.jambologos.com/uploads/image.jpg"
                   />
                   <input
                     ref={fileInputRef}
@@ -276,7 +275,12 @@ const AdminPostEditor = () => {
                   </button>
                 </div>
                 {form.image && (
-                  <img src={form.image} alt="Preview" className="mt-2 h-32 rounded-lg object-cover" />
+                  <img
+                    src={resolveImageUrl(form.image)}
+                    alt="Preview"
+                    className="mt-2 h-32 rounded-lg object-cover"
+                    onError={(e) => { (e.target as HTMLImageElement).src = "/placeholder.svg"; }}
+                  />
                 )}
               </div>
 
@@ -295,15 +299,12 @@ const AdminPostEditor = () => {
               <div>
                 <label className="block text-sm font-medium text-foreground mb-1.5">Content</label>
                 <div className="rounded-lg border border-input overflow-hidden bg-background">
-                  {/* Toolbar */}
                   <div className="flex flex-wrap items-center gap-0.5 px-2 py-1.5 bg-muted/50 border-b border-border">
-                    {/* Block styles */}
                     <TBtn icon={Type} label="Paragraph" onClick={() => formatBlock("p")} />
                     <TBtn icon={Heading1} label="Heading 2" onClick={() => formatBlock("h2")} />
                     <TBtn icon={Heading2} label="Heading 3" onClick={() => formatBlock("h3")} />
                     <TBtn icon={Heading3} label="Heading 4" onClick={() => formatBlock("h4")} />
                     <Divider />
-                    {/* Inline styles */}
                     <TBtn icon={Bold} label="Bold" onClick={() => exec("bold")} />
                     <TBtn icon={Italic} label="Italic" onClick={() => exec("italic")} />
                     <TBtn icon={Code} label="Inline Code" onClick={() => {
@@ -314,13 +315,11 @@ const AdminPostEditor = () => {
                       }
                     }} />
                     <Divider />
-                    {/* Lists */}
                     <TBtn icon={List} label="Bullet List" onClick={() => exec("insertUnorderedList")} />
                     <TBtn icon={ListOrdered} label="Numbered List" onClick={() => exec("insertOrderedList")} />
                     <TBtn icon={Quote} label="Blockquote" onClick={() => formatBlock("blockquote")} />
                     <TBtn icon={Minus} label="Horizontal Rule" onClick={() => exec("insertHorizontalRule")} />
                     <Divider />
-                    {/* Media & Link */}
                     <TBtn icon={Link} label="Insert Link" onClick={insertLink} />
                     <input
                       ref={contentImageRef}
@@ -335,12 +334,10 @@ const AdminPostEditor = () => {
                       onClick={() => contentImageRef.current?.click()}
                     />
                     <Divider />
-                    {/* Undo / Redo */}
                     <TBtn icon={Undo2} label="Undo" onClick={() => exec("undo")} />
                     <TBtn icon={Redo2} label="Redo" onClick={() => exec("redo")} />
                   </div>
 
-                  {/* Editable area — no dangerouslySetInnerHTML to avoid cursor resets */}
                   <div
                     ref={editorRef}
                     contentEditable
@@ -353,6 +350,7 @@ const AdminPostEditor = () => {
                 </p>
               </div>
 
+              {/* Author + Status row */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-foreground mb-1.5">Author</label>
@@ -390,7 +388,9 @@ const AdminPostEditor = () => {
 
               {/* SEO Section */}
               <div className="border-t border-border pt-5 mt-2">
-                <h3 className="text-sm font-semibold text-foreground mb-4 uppercase tracking-wide">SEO Settings <span className="text-muted-foreground font-normal normal-case tracking-normal">(optional — auto-generated if empty)</span></h3>
+                <h3 className="text-sm font-semibold text-foreground mb-4 uppercase tracking-wide">
+                  SEO Settings <span className="text-muted-foreground font-normal normal-case tracking-normal">(optional — auto-generated if empty)</span>
+                </h3>
                 <div className="space-y-4">
                   <div>
                     <label className="block text-sm font-medium text-foreground mb-1.5">SEO Title</label>
@@ -411,6 +411,9 @@ const AdminPostEditor = () => {
                       className="w-full px-4 py-2.5 rounded-lg border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring resize-none"
                       placeholder={form.excerpt || "Auto-generated from excerpt"}
                     />
+                    <p className={`text-xs mt-1 ${seoDescLen > 160 ? "text-destructive" : seoDescLen > 0 ? "text-emerald-600" : "text-muted-foreground"}`}>
+                      {seoDescLen}/160 characters {seoDescLen > 160 ? "(too long)" : seoDescLen > 0 ? "✓" : ""}
+                    </p>
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-foreground mb-1.5">SEO Keywords</label>

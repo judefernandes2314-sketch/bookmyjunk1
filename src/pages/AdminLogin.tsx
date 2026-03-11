@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Lock, Mail } from "lucide-react";
+import { isTokenValid } from "@/lib/blog-api";
 
 const AdminLogin = () => {
   const [email, setEmail] = useState("");
@@ -12,19 +13,25 @@ const AdminLogin = () => {
 
   const API_BASE = import.meta.env.VITE_API_URL || "";
 
+  // Redirect if already logged in with valid token
+  useEffect(() => {
+    if (isTokenValid()) {
+      navigate("/admin/dashboard", { replace: true });
+    }
+  }, [navigate]);
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setLoading(true);
 
     if (!API_BASE) {
-      // Demo mode — allow approved emails with any password
       const approved = ["epr@ecoreco.com", "info@ecoreco.com"];
       if (approved.includes(email.toLowerCase())) {
         localStorage.setItem("admin_token", "demo_token");
         localStorage.setItem("admin_email", email);
         localStorage.setItem("admin_role", "admin");
-        navigate("/admin/dashboard");
+        navigate("/admin/dashboard", { replace: true });
       } else {
         setError("Access denied. Only approved admin emails can log in.");
       }
@@ -43,7 +50,7 @@ const AdminLogin = () => {
         localStorage.setItem("admin_token", data.token);
         localStorage.setItem("admin_email", email);
         localStorage.setItem("admin_role", data.role || "admin");
-        navigate("/admin/dashboard");
+        navigate("/admin/dashboard", { replace: true });
       } else {
         setError(data.message || "Login failed");
       }
