@@ -1,0 +1,474 @@
+================================================================================
+          BOOKMYJUNK — COMPLETE DEPLOYMENT GUIDE
+          React + Node.js + MySQL → cPanel (HostMyCode / BigRock)
+          Version 1.0 | March 2026
+================================================================================
+
+TABLE OF CONTENTS
+─────────────────
+1. Prerequisites
+2. MySQL Database Setup
+3. Backend Deployment (Node.js API)
+4. Frontend Build & Deployment
+5. Configure .htaccess
+6. Verification Checklist
+7. Troubleshooting
+8. Final Server Folder Structure
+9. Future Updates — Quick Deploy Steps
+
+
+================================================================================
+PART 1: PREREQUISITES
+================================================================================
+
+What You Need:
+┌─────────────────────┬──────────────────────────────────────────────┐
+│ Item                │ Details                                      │
+├─────────────────────┼──────────────────────────────────────────────┤
+│ cPanel Access       │ HostMyCode or BigRock cPanel login            │
+│ Node.js Support     │ cPanel → Setup Node.js App (or SSH + PM2)    │
+│ MySQL Database      │ cPanel → MySQL Databases                     │
+│ Domain              │ Your domain pointed to the hosting server    │
+│ Local Machine       │ With Node.js v18+ installed                  │
+│ Project Code        │ Downloaded from Lovable via GitHub sync      │
+└─────────────────────┴──────────────────────────────────────────────┘
+
+Download Your Code from Lovable:
+1. Go to your Lovable project → Settings → GitHub
+2. Connect GitHub & push to a repo
+3. Clone the repo to your local machine:
+
+   git clone https://github.com/YOUR_USERNAME/YOUR_REPO.git
+   cd YOUR_REPO
+
+
+================================================================================
+PART 2: MYSQL DATABASE SETUP
+================================================================================
+
+STEP 2.1 — Create Database & User in cPanel
+────────────────────────────────────────────
+1. Login to cPanel
+2. Go to MySQL® Databases
+3. Create a new database: youraccount_bmj_blog
+4. Create a new user: youraccount_bmjuser with a STRONG password
+5. Add user to database → Grant ALL PRIVILEGES → Click "Make Changes"
+
+⚠️ NOTE: cPanel prefixes database names. If your cPanel username is "abc",
+   the database will be "abc_bmj_blog".
+
+STEP 2.2 — Import the Schema
+─────────────────────────────
+1. Go to phpMyAdmin in cPanel
+2. Select your database (youraccount_bmj_blog)
+3. Click the SQL tab
+4. Paste and run this complete schema:
+
+--- START SQL ---
+
+-- Blog posts table
+CREATE TABLE IF NOT EXISTS blog_posts (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  title VARCHAR(255) NOT NULL,
+  slug VARCHAR(255) NOT NULL UNIQUE,
+  image VARCHAR(500) DEFAULT NULL,
+  excerpt TEXT,
+  content LONGTEXT,
+  author VARCHAR(100) DEFAULT 'Admin',
+  status ENUM('draft', 'published') DEFAULT 'draft',
+  publish_date DATE DEFAULT NULL,
+  seo_title VARCHAR(255) DEFAULT NULL,
+  seo_description TEXT DEFAULT NULL,
+  seo_keywords TEXT DEFAULT NULL,
+  featured_homepage BOOLEAN DEFAULT FALSE,
+  views INT DEFAULT 0,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  INDEX idx_slug (slug),
+  INDEX idx_status (status),
+  INDEX idx_publish_date (publish_date)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Admin users table
+CREATE TABLE IF NOT EXISTS admin_users (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  email VARCHAR(255) NOT NULL UNIQUE,
+  password_hash VARCHAR(255) NOT NULL,
+  name VARCHAR(100),
+  role_id INT DEFAULT NULL,
+  is_active TINYINT(1) DEFAULT 1,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_email (email)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Roles table
+CREATE TABLE IF NOT EXISTS roles (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(50) NOT NULL UNIQUE,
+  description VARCHAR(255),
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Permissions table
+CREATE TABLE IF NOT EXISTS permissions (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(100) NOT NULL UNIQUE,
+  description VARCHAR(255)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Role-Permission mapping
+CREATE TABLE IF NOT EXISTS role_permissions (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  role_id INT NOT NULL,
+  permission_id INT NOT NULL,
+  UNIQUE KEY unique_role_perm (role_id, permission_id),
+  FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE CASCADE,
+  FOREIGN KEY (permission_id) REFERENCES permissions(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Admin approval requests table
+CREATE TABLE IF NOT EXISTS admin_approvals (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  user_id INT NOT NULL,
+  token VARCHAR(255) NOT NULL UNIQUE,
+  status ENUM('pending', 'approved', 'rejected') DEFAULT 'pending',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES admin_users(id) ON DELETE CASCADE,
+  INDEX idx_token (token)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Foreign key
+ALTER TABLE admin_users ADD FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE SET NULL;
+
+--- END SQL ---
+
+
+STEP 2.3 — Insert Seed Data
+────────────────────────────
+Run this separately in phpMyAdmin:
+
+--- START SQL ---
+
+-- Default roles
+INSERT INTO roles (name, description) VALUES
+  ('admin', 'Full control over all features'),
+  ('author', 'Can create, edit, and publish own posts'),
+  ('pending_admin', 'Awaiting admin approval');
+
+-- Default permissions
+INSERT INTO permissions (name, description) VALUES
+  ('create_post', 'Create new blog posts'),
+  ('edit_post', 'Edit blog posts'),
+  ('delete_post', 'Delete blog posts'),
+  ('publish_post', 'Publish/unpublish blog posts'),
+  ('manage_users', 'Add and manage admin users'),
+  ('manage_roles', 'Create and assign roles'),
+  ('import_json', 'Import blog posts from JSON');
+
+-- Admin role gets all permissions
+INSERT INTO role_permissions (role_id, permission_id)
+SELECT r.id, p.id FROM roles r, permissions p WHERE r.name = 'admin';
+
+-- Author role gets limited permissions
+INSERT INTO role_permissions (role_id, permission_id)
+SELECT r.id, p.id FROM roles r, permissions p
+WHERE r.name = 'author'
+AND p.name IN ('create_post', 'edit_post', 'delete_post', 'publish_post');
+
+--- END SQL ---
+
+
+STEP 2.4 — Create Admin Users
+──────────────────────────────
+First, generate a password hash on your local machine:
+
+   node -e "const bcrypt=require('bcryptjs'); bcrypt.hash('YourPassword123',10).then(h=>console.log(h));"
+
+Then insert admin users in phpMyAdmin:
+
+   INSERT INTO admin_users (email, password_hash, name, role_id) VALUES
+     ('epr@ecoreco.com', 'PASTE_HASH_HERE', 'EPR Admin',
+       (SELECT id FROM roles WHERE name = 'admin')),
+     ('info@ecoreco.com', 'PASTE_HASH_HERE', 'Info Admin',
+       (SELECT id FROM roles WHERE name = 'admin'));
+
+
+================================================================================
+PART 3: BACKEND DEPLOYMENT (Node.js API)
+================================================================================
+
+STEP 3.1 — Upload Backend Files
+────────────────────────────────
+1. In cPanel File Manager, create folder: /home/youraccount/bmj-backend/
+2. Upload the entire backend/ folder contents into it:
+
+   bmj-backend/
+   ├── server.js
+   ├── db.js
+   ├── package.json
+   ├── middleware/
+   │   └── auth.js
+   ├── routes/
+   │   ├── blog.js
+   │   ├── admin.js
+   │   └── analytics.js
+   └── database/
+       └── schema.sql
+
+
+STEP 3.2 — Create .env File
+────────────────────────────
+Create .env in /home/youraccount/bmj-backend/:
+
+   DB_HOST=localhost
+   DB_USER=youraccount_bmjuser
+   DB_PASSWORD=your_database_password
+   DB_NAME=youraccount_bmj_blog
+   DB_PORT=3306
+
+   JWT_SECRET=generate_a_random_64_char_string_here
+   PORT=5000
+
+   SITE_URL=https://yourdomain.com
+   FRONTEND_URL=https://yourdomain.com
+   API_URL=https://yourdomain.com
+
+   # SMTP for admin approval emails
+   SMTP_HOST=smtp.gmail.com
+   SMTP_PORT=587
+   SMTP_USER=your-email@gmail.com
+   SMTP_PASS=your-gmail-app-password
+   SMTP_FROM=noreply@yourdomain.com
+
+💡 Generate JWT_SECRET:
+   node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+
+
+STEP 3.3 — Create Uploads Directory
+────────────────────────────────────
+Create an "uploads" folder inside bmj-backend/ and set permissions to 755.
+
+
+STEP 3.4 — Install Dependencies & Start
+────────────────────────────────────────
+
+OPTION A: cPanel Node.js Selector (HostMyCode / BigRock)
+1. Go to cPanel → Setup Node.js App
+2. Click Create Application:
+   - Node.js version: 18 (or latest)
+   - Application mode: Production
+   - Application root: bmj-backend
+   - Application startup file: server.js
+3. Click Create
+4. Click Run NPM Install
+5. Click Start App
+
+OPTION B: SSH + PM2
+   ssh youraccount@your-server-ip
+   cd ~/bmj-backend
+   npm install
+   npm install -g pm2
+   pm2 start server.js --name "bmj-api"
+   pm2 save
+   pm2 startup
+
+
+STEP 3.5 — Verify Backend
+──────────────────────────
+Test: curl http://localhost:5000/api/health
+Expected: {"status":"ok"}
+
+
+================================================================================
+PART 4: FRONTEND BUILD & DEPLOYMENT
+================================================================================
+
+STEP 4.1 — Build the React Frontend
+────────────────────────────────────
+On your local machine, in the project root:
+
+macOS / Linux:
+   npm install
+   VITE_API_URL=https://yourdomain.com VITE_SITE_URL=https://yourdomain.com npm run build
+
+Windows (PowerShell):
+   npm install
+   $env:VITE_API_URL="https://yourdomain.com"
+   $env:VITE_SITE_URL="https://yourdomain.com"
+   npm run build
+
+This creates a dist/ folder with the production build.
+
+
+STEP 4.2 — Upload to public_html
+─────────────────────────────────
+1. In cPanel File Manager, navigate to public_html/
+2. Delete old assets/ folder and old index.html
+3. Upload everything inside dist/ to public_html/:
+
+   public_html/
+   ├── index.html
+   ├── assets/
+   │   ├── index-XXXX.js
+   │   └── index-XXXX.css
+   ├── carousel/
+   ├── data/
+   │   └── blog-posts.json
+   ├── favicon.ico
+   └── favicon.webp
+
+⚠️ Do NOT delete your .htaccess, uploads/ symlink, or backend-generated files.
+
+
+================================================================================
+PART 5: CONFIGURE .htaccess (CRITICAL)
+================================================================================
+
+Create or edit .htaccess in public_html/:
+
+--- START .htaccess ---
+
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /
+
+  # Proxy API requests to Node.js backend
+  RewriteRule ^api/(.*)$ http://localhost:5000/api/$1 [P,L]
+
+  # Proxy uploads to backend
+  RewriteRule ^uploads/(.*)$ http://localhost:5000/uploads/$1 [P,L]
+
+  # Dynamic sitemap & robots from backend
+  RewriteRule ^sitemap\.xml$ http://localhost:5000/sitemap.xml [P,L]
+  RewriteRule ^robots\.txt$ http://localhost:5000/robots.txt [P,L]
+
+  # SPA fallback: serve index.html for all routes
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteCond %{REQUEST_FILENAME} !-d
+  RewriteRule . /index.html [L]
+</IfModule>
+
+# Caching for static assets
+<IfModule mod_expires.c>
+  ExpiresActive On
+  ExpiresByType image/webp "access plus 1 year"
+  ExpiresByType image/jpeg "access plus 1 year"
+  ExpiresByType image/png "access plus 1 year"
+  ExpiresByType text/css "access plus 1 month"
+  ExpiresByType application/javascript "access plus 1 month"
+</IfModule>
+
+# Gzip compression
+<IfModule mod_deflate.c>
+  AddOutputFilterByType DEFLATE text/html text/css
+  AddOutputFilterByType DEFLATE application/javascript application/json
+  AddOutputFilterByType DEFLATE image/svg+xml
+</IfModule>
+
+--- END .htaccess ---
+
+⚠️ IMPORTANT: mod_proxy and mod_proxy_http must be enabled on your hosting.
+   If proxy rules don't work, contact HostMyCode/BigRock support to enable them.
+
+
+================================================================================
+PART 6: VERIFICATION CHECKLIST
+================================================================================
+
+┌────┬─────────────────────────────┬────────────────────────────────────────────┬───┐
+│ #  │ Test                        │ URL / Action                               │ ✓ │
+├────┼─────────────────────────────┼────────────────────────────────────────────┼───┤
+│  1 │ Homepage loads              │ https://yourdomain.com                     │   │
+│  2 │ Blog listing                │ https://yourdomain.com/blog                │   │
+│  3 │ Blog post opens             │ https://yourdomain.com/blog/any-slug       │   │
+│  4 │ API health check            │ https://yourdomain.com/api/health          │   │
+│  5 │ Admin login                 │ https://yourdomain.com/admin               │   │
+│  6 │ CMS editor + toolbar        │ /admin/posts/new                           │   │
+│  7 │ Image upload                │ Upload image in the editor                 │   │
+│  8 │ Analytics tab               │ /admin/dashboard → Analytics tab           │   │
+│  9 │ Sitemap                     │ https://yourdomain.com/sitemap.xml         │   │
+│ 10 │ Blog view tracking          │ Open post, check analytics for count       │   │
+│ 11 │ Privacy policy              │ https://yourdomain.com/privacy-policy      │   │
+│ 12 │ 404 page                    │ https://yourdomain.com/random-page         │   │
+└────┴─────────────────────────────┴────────────────────────────────────────────┴───┘
+
+
+================================================================================
+PART 7: TROUBLESHOOTING
+================================================================================
+
+┌───────────────────────────┬──────────────────────────────────────────────────────┐
+│ Problem                   │ Fix                                                  │
+├───────────────────────────┼──────────────────────────────────────────────────────┤
+│ White blank page          │ Check console. VITE_API_URL not set during build.    │
+│ API returns 502/503       │ Node.js app not running. Restart in cPanel.          │
+│ API returns 404           │ .htaccess proxy not working. Enable mod_proxy.       │
+│ Database connection error │ Check .env credentials match cPanel MySQL (prefix).  │
+│ CORS errors               │ FRONTEND_URL in .env must match actual domain.       │
+│ Images not loading        │ Check uploads/ permissions (755) and proxy rule.     │
+│ Routes 404 on refresh     │ .htaccess SPA fallback not working. mod_rewrite.     │
+│ Admin can't login         │ Verify password hash in admin_users table.           │
+│ Editor not saving         │ VITE_API_URL not set correctly during build.         │
+└───────────────────────────┴──────────────────────────────────────────────────────┘
+
+
+================================================================================
+PART 8: FINAL SERVER FOLDER STRUCTURE
+================================================================================
+
+/home/youraccount/
+├── bmj-backend/              ← Node.js API
+│   ├── .env
+│   ├── server.js
+│   ├── db.js
+│   ├── package.json
+│   ├── node_modules/
+│   ├── uploads/              ← uploaded images
+│   ├── middleware/
+│   │   └── auth.js
+│   ├── routes/
+│   │   ├── blog.js
+│   │   ├── admin.js
+│   │   └── analytics.js
+│   └── database/
+│       └── schema.sql
+│
+└── public_html/              ← React frontend (dist/)
+    ├── .htaccess
+    ├── index.html
+    ├── assets/
+    │   ├── index-XXXX.js
+    │   └── index-XXXX.css
+    ├── carousel/
+    ├── data/
+    │   └── blog-posts.json
+    ├── favicon.ico
+    └── favicon.webp
+
+
+================================================================================
+PART 9: FUTURE UPDATES — QUICK DEPLOY STEPS
+================================================================================
+
+FRONTEND-ONLY CHANGES (UI, styling, new pages):
+1. Pull latest code from GitHub
+2. Run: npm run build (with VITE_API_URL and VITE_SITE_URL set)
+3. Upload new dist/ contents to public_html/ (replace old assets/ and index.html)
+4. Clear browser cache and verify
+
+BACKEND CHANGES (new routes, API logic):
+1. Upload changed files to bmj-backend/
+2. Run npm install if new packages were added
+3. Restart Node.js app:
+   - cPanel: Node.js Selector → Stop → Start
+   - SSH: pm2 restart bmj-api
+
+DATABASE CHANGES (new columns, tables):
+1. Run the provided ALTER TABLE / CREATE TABLE SQL in phpMyAdmin
+2. Then deploy backend + frontend as needed
+
+
+================================================================================
+   BookMyJunk Deployment Guide — Generated March 2026
+   For support, contact your development team.
+================================================================================
